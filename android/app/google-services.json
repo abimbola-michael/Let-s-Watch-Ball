@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "1046259746616",
+    "project_id": "watchball",
+    "storage_bucket": "watchball.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1046259746616:android:12144bb7c0a8e28d9de3cd",
+        "android_client_info": {
+          "package_name": "com.example.watchball"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDg2wrotOai0OmdSrAsNGBAs7pMmWLBSvM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1046259746616:android:dafa99c97d61e9289de3cd",
+        "android_client_info": {
+          "package_name": "com.hms.watchball"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDg2wrotOai0OmdSrAsNGBAs7pMmWLBSvM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
