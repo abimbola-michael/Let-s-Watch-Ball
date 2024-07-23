@@ -72,7 +72,7 @@ class Win32Window {
   virtual void OnDestroy();
 
  private:
-  contact class WindowClassRegistrar;
+  friend class WindowClassRegistrar;
 
   // OS callback called by message pump. Handles the WM_NCCREATE message which
   // is passed when the non-client area is being created and enables automatic

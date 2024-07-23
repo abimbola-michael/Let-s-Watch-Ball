@@ -1,8 +1,30 @@
 // creating extension in flutter
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
-import '../components/reuseable/app_bottom_sheet.dart';
+import '../shared/components/app_bottom_sheet.dart';
+import '../firebase/firestore_methods.dart';
+import '../theme/colors.dart';
+
+extension ListExtensions<T> on List<T> {
+  List<List<T>> getGroupedList(String Function(T value) callback) {
+    Map<String, int> idMap = {};
+    List<List<T>> result = [];
+    for (int i = 0; i < length; i++) {
+      final value = this[i];
+      final id = callback(value);
+      final index = idMap[id];
+      if (index == null) {
+        idMap[id] = result.length;
+        result.add([value]);
+      } else {
+        result[index].add(value);
+      }
+    }
+    return result;
+  }
+}
 
 extension IntExtensions on int {
   ///returns a String with leading zeros.
@@ -16,6 +38,8 @@ extension IntExtensions on int {
 }
 
 extension ContextExtension on BuildContext {
+  bool get isPortrait => width < height;
+  bool get isLandscape => width > height;
   double get statusBarHeight => MediaQuery.of(this).padding.top;
   ThemeData get theme => Theme.of(this);
   double get height => MediaQuery.of(this).size.height;
@@ -72,6 +96,15 @@ extension ContextExtension on BuildContext {
     );
   }
 
+  Future showSnackBar(String message, [bool isError = true]) async {
+    ScaffoldMessenger.of(this).showSnackBar(SnackBar(
+        content: Text(
+          message,
+          style: bodySmall?.copyWith(color: white),
+        ),
+        backgroundColor: isError ? Colors.red : primaryColor));
+  }
+
   // void showComfirmationSnackbar(String message) {
   //   ScaffoldMessenger.of(this).showSnackBar(
   //     SnackBar(
@@ -86,10 +119,15 @@ extension ContextExtension on BuildContext {
   // }
 }
 
+extension DateTimeExtensions on DateTime {
+  String get toDateTimeString => millisecondsSinceEpoch.toString();
+}
+
 extension StringExtensions on String {
   String get toJpg => "assets/images/png/$this.jpg";
   String get toPng => "assets/images/png/$this.png";
   String get toSvg => "assets/images/svg/$this.svg";
+  DateTime get toDateTime => DateTime.fromMillisecondsSinceEpoch(toInt);
   String lastChars(int n) => substring(length - n);
 
   String get capitalize {
@@ -163,3 +201,213 @@ extension IntExtenstions on int {
   String toCurrency(String currency) =>
       NumberFormat.currency(locale: 'en_US', symbol: currency).format(this);
 }
+
+extension DocsnapshotExtension<T> on DocumentSnapshot {
+  Map<String, dynamic>? get map =>
+      data() != null ? data() as Map<String, dynamic> : null;
+  T? getValue<T>(T Function(Map<String, dynamic> map) callback) =>
+      map != null ? callback(map!) : null;
+}
+
+extension QuerysnapshotExtension<T> on QuerySnapshot {
+  List<T> getValues<T>(T Function(Map<String, dynamic> map) callback) =>
+      docs.isNotEmpty ? docs.map((doc) => callback(doc.map!)).toList() : [];
+  List<ValueChange<T>> getValuesChange<T>(
+          T Function(Map<String, dynamic> map) callback) =>
+      docChanges.isNotEmpty
+          ? docChanges
+              .map((change) => ValueChange<T>(
+                    type: change.type,
+                    oldIndex: change.oldIndex,
+                    newIndex: change.newIndex,
+                    value: callback(change.doc.map!),
+                  ))
+              .toList()
+          : [];
+}
+
+extension QueryExtension on Query {
+  Query getQuery(List<dynamic>? where, List<dynamic>? order,
+      List<dynamic>? start, List<dynamic>? end, List<dynamic>? limit) {
+    Query query = this;
+    if (where != null) {
+      int times = (where.length / 3).floor();
+      for (int i = 0; i < times; i++) {
+        final j = i * 3;
+        String name = where[j + 0];
+        String clause = where[j + 1];
+        dynamic value = where[j + 2];
+        query = query.where(
+          name,
+          isEqualTo: clause == "==" ? value : null,
+          isNotEqualTo: clause == "!=" ? value : null,
+          isLessThan: clause == "<" ? value : null,
+          isGreaterThan: clause == ">" ? value : null,
+          isLessThanOrEqualTo: clause == "<=" ? value : null,
+          isGreaterThanOrEqualTo: clause == ">=" ? value : null,
+          whereIn: clause == "in" ? value : null,
+          whereNotIn: clause == "notin" ? value : null,
+          arrayContains: clause == "contains" ? value : null,
+          arrayContainsAny: clause == "containsany" ? value : null,
+          isNull: clause == "is" ? value : null,
+        );
+      }
+    }
+    if (order != null) {
+      String orderName = order[0];
+      bool desc = order[1] ?? false;
+      query = query.orderBy(orderName, descending: desc);
+    }
+    if (start != null) {
+      dynamic startName = start[0];
+      bool after = start.length == 1 ? false : start[1];
+      query =
+          after ? query.startAfter([startName]) : query.startAt([startName]);
+    }
+    if (end != null) {
+      dynamic endName = end[0];
+      bool before = end.length == 1 ? false : end[1];
+      query = before ? query.endBefore([endName]) : query.endAt([endName]);
+    }
+    if (limit != null) {
+      int limitCount = limit[0];
+      bool last = limit.length == 1 ? false : limit[1];
+      query = last ? query.limitToLast(limitCount) : query.limit(limitCount);
+    }
+    return query;
+  }
+}
+
+extension ValueChangeExtensions<T> on ValueChange<T> {
+  bool get added => type == DocumentChangeType.added;
+  bool get modified => type == DocumentChangeType.modified;
+  bool get removed => type == DocumentChangeType.removed;
+}
+
+extension ListValueChangeExtensions<T> on List<ValueChange<T>> {
+  void getValueChange(void Function(ValueChange<T> change)? changeCallback,
+      {String Function(T value)? createdAtCallback,
+      String Function(T value)? modifiedAtCallback,
+      String? Function(T value)? deletedAtCallback}) {
+    for (int i = 0; i < length; i++) {
+      ValueChange<T> change = this[i];
+      final type = change.type;
+      final value = change.value;
+      final createdAt = createdAtCallback?.call(value);
+      final modifiedAt = modifiedAtCallback?.call(value);
+      final deletedAt = deletedAtCallback?.call(value);
+      DocumentChangeType newType = DocumentChangeType.added;
+
+      if ((modifiedAt != null &&
+              createdAt != null &&
+              modifiedAt == createdAt) ||
+          type == DocumentChangeType.added) {
+        newType = DocumentChangeType.added;
+      } else if (deletedAt != null || type == DocumentChangeType.removed) {
+        newType = DocumentChangeType.removed;
+      } else {
+        newType = DocumentChangeType.modified;
+      }
+      change = ValueChange(
+          value: value,
+          type: newType,
+          oldIndex: change.oldIndex,
+          newIndex: change.newIndex);
+      changeCallback?.call(change);
+    }
+  }
+
+  void mergeResult(List<T> prevList, String Function(T value) idCallback,
+      {void Function(ValueChange<T> change)? changeCallback,
+      String Function(T value)? createdAtCallback,
+      String Function(T value)? modifiedAtCallback,
+      String? Function(T value)? deletedAtCallback}) {
+    for (int i = 0; i < length; i++) {
+      ValueChange<T> change = this[i];
+      final type = change.type;
+      final value = change.value;
+      final createdAt = createdAtCallback?.call(value);
+      final modifiedAt = modifiedAtCallback?.call(value);
+      final deletedAt = deletedAtCallback?.call(value);
+      DocumentChangeType newType = DocumentChangeType.added;
+
+      if ((modifiedAt != null &&
+              createdAt != null &&
+              modifiedAt == createdAt) ||
+          type == DocumentChangeType.added) {
+        prevList.add(value);
+        newType = DocumentChangeType.added;
+      } else if (deletedAt != null || type == DocumentChangeType.removed) {
+        prevList.removeWhere(
+            (prevValue) => idCallback(prevValue) == idCallback(value));
+        newType = DocumentChangeType.removed;
+      } else {
+        final index = prevList.indexWhere(
+            (prevValue) => idCallback(prevValue) == idCallback(value));
+        if (index != -1) {
+          prevList[index] = value;
+        }
+        newType = DocumentChangeType.modified;
+      }
+      change = ValueChange(
+          value: value,
+          type: newType,
+          oldIndex: change.oldIndex,
+          newIndex: change.newIndex);
+      changeCallback?.call(change);
+    }
+  }
+}
+
+
+// extension CollectionReferenceExtension on CollectionReference {
+//   Query getQuery(List<dynamic>? where, List<dynamic>? order,
+//       List<dynamic>? start, List<dynamic>? end, List<dynamic>? limit) {
+//     Query query = this;
+//     if (where != null) {
+//       int times = (where.length / 3).floor();
+//       for (int i = 0; i < times; i++) {
+//         final j = i * 3;
+//         String name = where[j + 0];
+//         String clause = where[j + 1];
+//         dynamic value = where[j + 2];
+//         query = query.where(
+//           name,
+//           isEqualTo: clause == "==" ? value : null,
+//           isNotEqualTo: clause == "!=" ? value : null,
+//           isLessThan: clause == "<" ? value : null,
+//           isGreaterThan: clause == ">" ? value : null,
+//           isLessThanOrEqualTo: clause == "<=" ? value : null,
+//           isGreaterThanOrEqualTo: clause == ">=" ? value : null,
+//           whereIn: clause == "in" ? value : null,
+//           whereNotIn: clause == "notin" ? value : null,
+//           arrayContains: clause == "contains" ? value : null,
+//           arrayContainsAny: clause == "containsany" ? value : null,
+//           isNull: clause == "null" ? value : null,
+//         );
+//       }
+//     }
+//     if (order != null) {
+//       String orderName = order[0];
+//       bool desc = order[1] ?? false;
+//       query = query.orderBy(orderName, descending: desc);
+//     }
+//     if (start != null) {
+//       dynamic startName = start[0];
+//       bool after = start.length == 1 ? false : start[1];
+//       query =
+//           after ? query.startAfter([startName]) : query.startAt([startName]);
+//     }
+//     if (end != null) {
+//       dynamic endName = end[0];
+//       bool before = end.length == 1 ? false : end[1];
+//       query = before ? query.endBefore([endName]) : query.endAt([endName]);
+//     }
+//     if (limit != null) {
+//       int limitCount = limit[0];
+//       bool last = limit.length == 1 ? false : limit[1];
+//       query = last ? query.limitToLast(limitCount) : query.limit(limitCount);
+//     }
+//     return query;
+//   }
+// }

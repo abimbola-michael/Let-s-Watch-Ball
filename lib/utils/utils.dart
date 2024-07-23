@@ -1,12 +1,23 @@
 import 'dart:io';
 import 'dart:ui';
 
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:intl/intl.dart';
+import 'package:timezone/timezone.dart';
+import 'package:watchball/features/match/models/live_match.dart';
+import 'package:timezone/data/latest.dart';
+import 'package:watchball/firebase/firestore_methods.dart';
+import 'package:watchball/utils/extensions.dart';
 
 import '../main.dart';
+import '../shared/models/list_change.dart';
 
+String myId = FirebaseAuth.instance.currentUser?.uid ?? "";
+bool isWindows = !kIsWeb && Platform.isWindows;
 double statusBarHeight = window.padding.top / window.devicePixelRatio;
+String timeNow = DateTime.now().toDateTimeString;
 
 bool get isDarkMode =>
     sharedPreferences.getBool("darkmode") ??
@@ -174,6 +185,236 @@ String getTime(DateTime date) {
   return DateFormat("h:m").format(date);
 }
 
+// String getFullTime(DateTime date) {
+//   return DateFormat("h:ma").format(date);
+// }
+String getFullDate(DateTime date) {
+  return DateFormat("dd/MM/yyyy").format(date);
+}
+
 String getFullTime(DateTime date) {
-  return DateFormat("h:ma").format(date);
+  return DateFormat("hh:mm a").format(date);
+}
+
+bool isToday(DateTime date) {
+  final now = DateTime.now();
+  return date.year == now.year &&
+      date.month == now.month &&
+      date.day == now.day;
+}
+
+String getDateTime(String date, String time) {
+  return "$date $time";
+}
+// DateTime getDateTime(String date, String time) {
+//   final format =
+//       time.toLowerCase().contains("am") || time.toLowerCase().contains("pm")
+//           ? "dd/MM/yyyy hh:mm a"
+//           : "dd/MM/yyyy hh:mm";
+//   return DateFormat(format).parse("$date $time", true);
+// }
+
+String bestMatchTimeZone(DateTime parsedDateTime) {
+  // Get all available time zones
+  final allTimeZones = timeZoneDatabase.locations.keys;
+
+  // Variable to store the best match time zone
+  String bestMatchTimeZone = "";
+  Duration smallestDifference = const Duration(hours: 24);
+
+  // Compare the parsed DateTime with the current time in each time zone
+  for (var timeZone in allTimeZones) {
+    final location = getLocation(timeZone);
+    final tzDateTime = TZDateTime.from(parsedDateTime, location);
+
+    // Get the current time in the target time zone
+    final nowInTz = TZDateTime.now(location);
+
+    // Calculate the difference
+    final difference = nowInTz.difference(tzDateTime).abs();
+
+    // Find the smallest difference
+    if (difference < smallestDifference) {
+      smallestDifference = difference;
+      bestMatchTimeZone = timeZone;
+    }
+  }
+  return bestMatchTimeZone;
+}
+
+List<String> getTimeZoneDateTime(LiveMatch match) {
+  String date = match.date;
+  String time = match.time;
+
+  final format =
+      time.toLowerCase().contains("am") || time.toLowerCase().contains("pm")
+          ? "dd/MM/yyyy hh:mm a"
+          : "dd/MM/yyyy hh:mm";
+  final sourceDateTime = DateFormat(format).parse("$date $time", true);
+  // Get the current local time zone offset in hours
+  final currentTimeZoneOffset = DateTime.now().timeZoneOffset;
+  final hoursOffset = currentTimeZoneOffset.inHours;
+  final minutesOffset = currentTimeZoneOffset.inMinutes.remainder(60);
+
+  // Source GMT offset (Asia/Yangon) = +6:30
+  const sourceOffset = Duration(hours: 6, minutes: 30);
+
+  // Target GMT offset (assume your current local time zone, e.g., GMT+2)
+  final targetOffset = Duration(minutes: (hoursOffset * 60) + minutesOffset);
+
+  // Calculate the difference between source and target offsets
+  final offsetDifference = targetOffset - sourceOffset;
+
+  // Adjust the parsed date-time by the offset difference
+  final localDateTime = sourceDateTime.add(offsetDifference);
+
+  return [
+    DateFormat("dd/MM/yyyy").format(localDateTime),
+    DateFormat("hh:mm a").format(localDateTime)
+  ];
+}
+
+// List<String> getTimeZoneDateTime(LiveMatch match) {
+//   String date = match.date;
+//   String time = match.time;
+//   // String sourceTimeZone = "Asia/Yangon";
+
+//   //String sourceTimeZone = "America/Detroit";
+//   String sourceTimeZone = "Asia/Seoul";
+
+//   final sourceDateTime =
+//       DateFormat("dd/MM/yyyy hh:mm a").parse("$date $time", true);
+//   // if (currentTimeZone == null) {
+//   //   return [date, time];
+//   // }
+//   // String sourceTimeZone = bestMatchTimeZone(sourceDateTime);
+//   // print("sourceTimeZone = $sourceTimeZone");
+//   //final sourceLocation = getLocation(sourceTimeZone);
+
+//   // final sourceLocation = Location(
+//   //   'Custom/AsiaYangon',
+//   //   [0],
+//   //   [0],
+//   //   const [
+//   //     TimeZone(
+//   //       6 * 3600 + 1800, // Offset in seconds (6 hours and 30 minutes)
+//   //       isDst: false,
+//   //       abbreviation: 'MMT',
+//   //     )
+//   //   ],
+//   // );
+
+//   // // Create a location for the local time zone
+//   // final localLocation = Location(
+//   //   'Custom/Local',
+//   //   [0],
+//   //   [0],
+//   //   [
+//   //     TimeZone(
+//   //       hoursOffset * 3600 + minutesOffset * 60,
+//   //       isDst: DateTime.now().isUtc ? false : true,
+//   //       abbreviation: 'Local',
+//   //     )
+//   //   ],
+//   // );
+
+//   // final sourceTzDateTime = TZDateTime.from(sourceDateTime, sourceLocation);
+
+//   // // final localDateTime = sourceTzDateTime.toLocal();
+//   // //final localDateTime = TZDateTime.now(local);
+
+//   // // Convert the source time zone date-time to the local time zone
+//   // final localDateTime = TZDateTime.from(sourceTzDateTime, localLocation);
+//   // print(
+//   //     "location = $sourceLocation, local = $localLocation, hoursOffset = $hoursOffset:$minutesOffset, sourceTzDateTime = $sourceTzDateTime, $sourceDateTime, $localDateTime");
+
+//   // Get the current local time zone offset in hours
+//   final currentTimeZoneOffset = DateTime.now().timeZoneOffset;
+//   final hoursOffset = currentTimeZoneOffset.inHours;
+//   final minutesOffset = currentTimeZoneOffset.inMinutes.remainder(60);
+
+//   // Source GMT offset (Asia/Yangon) = +6:30
+//   const sourceOffset = Duration(hours: 6, minutes: 30);
+
+//   // Target GMT offset (assume your current local time zone, e.g., GMT+2)
+//   final targetOffset = Duration(minutes: (hoursOffset * 60) + minutesOffset);
+
+//   // Calculate the difference between source and target offsets
+//   final offsetDifference = targetOffset - sourceOffset;
+
+//   // Adjust the parsed date-time by the offset difference
+//   final localDateTime = sourceDateTime.add(offsetDifference);
+
+//   return [
+//     DateFormat("dd/MM/yyyy").format(localDateTime),
+//     DateFormat("hh:mm a").format(localDateTime)
+//   ];
+// }
+List<ListChange<T>> getListChanges<T>(
+    List<T> oldList, List<T> newList, String Function(T t) keyCallback) {
+  List<ListChange<T>> result = [];
+  // newList.sort((a, b) => keyCallback(a).compareTo(keyCallback(b)));
+  // oldList.sort((a, b) => keyCallback(a).compareTo(keyCallback(b)));
+  Map<String, List> newMap = {};
+  Map<String, List> oldMap = {};
+
+  final length =
+      newList.length > oldList.length ? newList.length : oldList.length;
+  for (int i = 0; i < length; i++) {
+    if (i < oldList.length) {
+      final oldValue = oldList[i];
+      oldMap[keyCallback(oldValue)] = [i, oldValue];
+    }
+    if (i < newList.length) {
+      final newValue = newList[i];
+      newMap[keyCallback(newValue)] = [i, newValue];
+    }
+  }
+  for (var entry in newMap.entries) {
+    final key = entry.key;
+    final newResult = entry.value;
+    final oldResult = oldMap[key];
+
+    if (oldResult == null) {
+      result.add(
+        ListChange(
+          index: newResult[0],
+          oldIndex: -1,
+          type: ListChangeType.added,
+          value: newResult[1],
+        ),
+      );
+    } else {
+      // final newValue = newResult[1];
+      // final oldValue = oldResult[1];
+
+      if (newResult[1] != oldResult[1]) {
+        result.add(
+          ListChange(
+            index: newResult[0],
+            oldIndex: oldResult[0],
+            type: ListChangeType.modified,
+            value: newResult[1],
+            oldValue: oldResult[1],
+          ),
+        );
+      }
+
+      oldMap.remove(key);
+    }
+  }
+  for (var entry in oldMap.entries) {
+    final oldResult = entry.value;
+    result.add(
+      ListChange(
+        index: oldResult[0],
+        oldIndex: oldResult[0],
+        type: ListChangeType.removed,
+        value: oldResult[1],
+        oldValue: oldResult[1],
+      ),
+    );
+  }
+
+  return result;
 }

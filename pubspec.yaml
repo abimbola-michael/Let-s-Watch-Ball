@@ -53,6 +53,26 @@ dependencies:
   #firebase_crashlytics:
   cloud_firestore:
   google_sign_in:
+  video_player:
+  #video_player_win:
+  encrypt:
+  #flutter_stripe:
+  fluttertoast:
+  awesome_notifications:
+  cached_network_image:
+  #flutter_timezone_plus:
+  timezone:
+  #better_player_plus:
+  cached_chewie_plus:
+  hive:
+  hive_flutter:
+  flutter_story_view:
+  vs_story_designer:
+  flutter_contacts:
+  video_editor_2:
+  flutter_animate:
+  #flutter_story_presenter
+  #crop_image:
 
 dev_dependencies:
   flutter_test:
