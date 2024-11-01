@@ -5,6 +5,7 @@ plugins {
     // END: FlutterFire Configuration
     id "kotlin-android"
     id "dev.flutter.flutter-gradle-plugin"
+    id 'com.google.firebase.crashlytics'
 }
 
 def localProperties = new Properties()
@@ -53,6 +54,14 @@ android {
         versionCode flutterVersionCode.toInteger()
         versionName flutterVersionName
         multiDexEnabled true
+        // Required for in-app purchases to work
+        manifestPlaceholders = [playBillingEnabled: "true"]
+    }
+
+    packagingOptions {
+       // Fixes duplicate libraries build issue, 
+       // when your project uses more than one plugin that depend on C++ libs.
+        pickFirst 'lib/**/libc++_shared.so'
     }
 
     buildTypes {
@@ -61,6 +70,9 @@ android {
             // Signing with the debug keys for now, so `flutter run --release` works.
             signingConfig signingConfigs.debug
             minifyEnabled true
+            proguardFiles getDefaultProguardFile(
+                 'proguard-android-optimize.txt'),
+                 'proguard-rules.pro'
         }
     }
 }
@@ -71,4 +83,5 @@ flutter {
 
 dependencies {
     implementation "com.google.android.material:material:1.2.0"
+    implementation 'com.google.firebase:firebase-crashlytics:18.3.7' // Add Firebase Crashlytics
 }

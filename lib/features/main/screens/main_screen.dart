@@ -6,19 +6,18 @@ import 'package:flutter_contacts/flutter_contacts.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:watchball/features/story/providers/stories_provider.dart';
+import 'package:watchball/firebase/auth_methods.dart';
 import 'package:watchball/shared/components/app_bottom_navigation_bar.dart';
 import 'package:watchball/features/watch/models/watch.dart';
-import 'package:watchball/features/watch/models/watched.dart';
-import 'package:watchball/features/watch/models/watched_match.dart';
-import 'package:watchball/features/invite/providers/invites_provider.dart';
+import 'package:watchball/features/watch/providers/watchs_history_provider.dart';
 import 'package:watchball/features/match/providers/match_provider.dart';
 import 'package:watchball/features/watch/providers/requested_watch_provider.dart';
 import 'package:watchball/features/watch/providers/watch_provider.dart';
-import 'package:watchball/features/invite/screens/invites_screen.dart';
+import 'package:watchball/features/watch/screens/watchs_screen.dart';
 import 'package:watchball/features/message/screens/messages_screen.dart';
 import 'package:watchball/features/story/screens/stories_screen.dart';
 import 'package:watchball/features/wallet/screens/wallet_screen.dart';
-import 'package:watchball/features/match/screens/matches_screen.dart';
+import 'package:watchball/features/match/screens/prev_matches_screen.dart';
 import 'package:watchball/features/profile/screens/profile_screen.dart';
 import 'package:icons_plus/icons_plus.dart';
 import 'package:watchball/features/watch/screens/watchers_screen.dart';
@@ -28,23 +27,26 @@ import 'package:watchball/utils/extensions.dart';
 import 'package:watchball/features/message/utils/message_utils.dart';
 import 'package:watchball/utils/utils.dart';
 
+import '../../../main.dart';
+import '../../../utils/country_code_utils.dart';
 import '../../contact/models/phone_contact.dart';
 import '../../../shared/models/list_change.dart';
+import '../../contact/providers/contacts_provider.dart';
 import '../../match/models/live_match.dart';
 import '../../message/models/chatlist.dart';
 import '../../message/models/message.dart';
 import '../../story/models/story.dart';
 import '../../story/providers/strories_changes_provider.dart';
 import '../../user/models/user.dart';
-import '../../watch/models/watch_invite.dart';
+import '../../user/providers/users_provider.dart';
 import '../../user/providers/user_provider.dart';
 import '../../watch/services/live_stream_service.dart';
 import '../../message/services/message_service.dart';
 import '../../story/services/story_service.dart';
 import '../../../theme/colors.dart';
 import '../../story/utils/story_utils.dart';
-import '../../update/screens/updates_screen.dart';
-import '../../watch/screens/watched_matches_screen.dart';
+import '../../match/screens/matches_screen.dart';
+import '../../watch/screens/watchs_history_screen.dart';
 
 class MainScreen extends ConsumerStatefulWidget {
   static const route = "/main";
@@ -70,24 +72,27 @@ class _MainScreenState extends ConsumerState<MainScreen> {
   Watch? currentWatch;
   String? currentWatchId;
   String? requestedWatchId;
-  List<WatchInvite>? invitedWatchs;
+  // List<Watch>? invitedWatchs;
   List<IconData> icons = [
     MingCute.football_line,
     MingCute.tv_2_line,
-    MingCute.message_1_line,
-    MingCute.live_photo_fill,
-    MingCute.invite_line,
+    // MingCute.message_1_line,
+    // MingCute.live_photo_fill,
+    //MingCute.invite_line,
     OctIcons.person
   ];
-  List<int> badgeCounts = [0, 0, 0, 0, 5, 0];
-  int unseenInvitesCount = 0;
+  List<int> badgeCounts = [0, 0, 0];
+  int unseenWatchsCount = 0;
 
   @override
   void initState() {
     // TODO: implement initState
     super.initState();
-    listenForUserUpdate();
-    listenForContacts();
+    getCountryDialCode();
+    //AuthMethods().logOut();
+    //listenForUserUpdate();
+    //listenForContacts();
+    //FlutterContacts.addListener(listenForContacts);
   }
 
   @override
@@ -101,155 +106,116 @@ class _MainScreenState extends ConsumerState<MainScreen> {
     contactsSub?.cancel();
     chatlistsSub?.cancel();
     storiesSub?.cancel();
-
+    //FlutterContacts.removeListener(listenForContacts);
     super.dispose();
   }
 
-  void listenForUserUpdate() async {
-    await Hive.openBox<String>("lastIimes");
-    await Hive.openBox<WatchInvite>("users");
-    userSub = streamUser(myId).listen((user) async {
-      if (user != null) {
-        ref.read(userProvider.notifier).updateUser(user);
-        if (currentWatchId != user.currentWatch) {
-          currentWatchId = user.currentWatch;
-          watchSub?.cancel();
-          if (currentWatchId != null) {
-            watchSub = streamWatch(currentWatchId!).listen((newWatch) async {
-              ref.read(watchProvider.notifier).updateWatch(newWatch);
-              if (newWatch == null ||
-                  newWatch.match.id != currentWatch?.match.id) {
-                ref.read(matchProvider.notifier).updateMatch(newWatch?.match);
-              }
-              currentWatch = newWatch;
-            });
-          } else {
-            watchSub?.cancel();
-            watchSub = null;
-            ref.read(watchProvider.notifier).updateWatch(null);
-          }
-        }
-        // else if (requestedWatchId != user.requestedWatch) {
-        //   requestedWatchId = user.requestedWatch;
-        //   ref
-        //       .read(requestedWatchProvider.notifier)
-        //       .updateWatch(requestedWatchId);
-        // }
-        // else if (invitedWatchs != user.invitedWatchs) {
-        //   final invitesChanges = getListChanges<WatchInvite>(
-        //       invitedWatchs ?? [],
-        //       user.invitedWatchs ?? [],
-        //       (invite) => invite.watchId);
-        //   invitedWatchs = user.invitedWatchs;
-        //   //  print("invitesChanges = $invitesChanges");
-        //   for (int i = 0; i < invitesChanges.length; i++) {
-        //     final invitesChange = invitesChanges[i];
-        //     if (invitesChange.type == ListChangeType.added) {
-        //       final invite = invitesChange.value;
-        //       ref.read(invitesProvider.notifier).addWatchInvite(invite);
-
-        //       final user = await getUser(invite.userId);
-        //       final watchers = invite.invitedUserIds.contains(",")
-        //           ? invite.invitedUserIds.split(",")
-        //           : [invite.invitedUserIds];
-        //       // final watch = await getWatch(invite.watchId);
-        //       String message =
-        //           "${user?.name ?? ""} invited you${watchers.length == 1 ? "" : " and ${watchers.length - 1} others"} to watch ${invite.match}";
-        //       if (!mounted) return;
-        //       context.showSnackBar(message, false);
-
-        //       // if (user != null && watch != null) {
-        //       //   String message =
-        //       //       "${user.name} is inviting you${watch.watchers.length == 2 ? "" : " and ${watch.watchers.length - 2} others"} to watch ${watch.match.homeName} vs ${watch.match.awayName}";
-        //       //   if (!mounted) return;
-        //       //   context.showSnackBar(message, false);
-        //       // }
-        //     }
-        //   }
-        // }
-      }
-    });
+  void getCountryDialCode() async {
+    countryDialCode = await getCurrentCountryDialingCode() ?? "";
   }
 
-  void listenForInvites() async {
-    await Hive.openBox<WatchInvite>("invites");
-    final invitesBox = Hive.box<WatchInvite>("invites");
+  // void listenForUserUpdate() async {
+  //   // await Hive.openBox<String>("lastIimes");
+  //   // await Hive.openBox<Watch>("users");
+  //   userSub = streamUser(myId).listen((user) async {
+  //     if (user != null) {
+  //       ref.read(userProvider.notifier).updateUser(user);
+  //       if (currentWatchId != user.currentWatch) {
+  //         currentWatchId = user.currentWatch;
+  //         watchSub?.cancel();
+  //         if (currentWatchId != null) {
+  //           watchSub = streamWatch(currentWatchId!).listen((newWatch) async {
+  //             ref.read(watchProvider.notifier).updateWatch(newWatch);
+  //             if (newWatch == null ||
+  //                 newWatch.match.id != currentWatch?.match.id) {
+  //               ref.read(matchProvider.notifier).updateMatch(newWatch?.match);
+  //             }
+  //             currentWatch = newWatch;
+  //           });
+  //         } else {
+  //           watchSub?.cancel();
+  //           watchSub = null;
+  //           ref.read(watchProvider.notifier).updateWatch(null);
+  //         }
+  //       }
+  //       // else if (requestedWatchId != user.requestedWatch) {
+  //       //   requestedWatchId = user.requestedWatch;
+  //       //   ref
+  //       //       .read(requestedWatchProvider.notifier)
+  //       //       .updateWatch(requestedWatchId);
+  //       // }
+  //       // else if (invitedWatchs != user.invitedWatchs) {
+  //       //   final watchsChanges = getListChanges<Watch>(
+  //       //       invitedWatchs ?? [],
+  //       //       user.invitedWatchs ?? [],
+  //       //       (invite) => invite.watchId);
+  //       //   invitedWatchs = user.invitedWatchs;
+  //       //   //  print("watchsChanges = $watchsChanges");
+  //       //   for (int i = 0; i < watchsChanges.length; i++) {
+  //       //     final watchsChange = watchsChanges[i];
+  //       //     if (watchsChange.type == ListChangeType.added) {
+  //       //       final invite = watchsChange.value;
+  //       //       ref.read(watchsProvider.notifier).addWatch(invite);
+
+  //       //       final user = await getUser(invite.userId);
+  //       //       final watchers = invite.invitedUserIds.contains(",")
+  //       //           ? invite.invitedUserIds.split(",")
+  //       //           : [invite.invitedUserIds];
+  //       //       // final watch = await getWatch(invite.watchId);
+  //       //       String message =
+  //       //           "${user?.name ?? ""} invited you${watchers.length == 1 ? "" : " and ${watchers.length - 1} others"} to watch ${invite.match}";
+  //       //       if (!mounted) return;
+  //       //       context.showSnackBar(message, false);
+
+  //       //       // if (user != null && watch != null) {
+  //       //       //   String message =
+  //       //       //       "${user.name} is inviting you${watch.watchers.length == 2 ? "" : " and ${watch.watchers.length - 2} others"} to watch ${watch.match.homeName} vs ${watch.match.awayName}";
+  //       //       //   if (!mounted) return;
+  //       //       //   context.showSnackBar(message, false);
+  //       //       // }
+  //       //     }
+  //       //   }
+  //       // }
+  //     }
+  //   });
+  // }
+
+  void listenForWatchs() async {
+    final watchsBox = Hive.box<String>("watchs");
     // final lastTimesBox = Hive.box<String>("lastTimes");
     // final lastTime = lastTimesBox.get("invite");
 
-    List<WatchInvite> invites = invitesBox.values.toList();
-    invites.sort((a, b) => a.createdAt.compareTo(b.createdAt));
+    // List<Watch> watchs = watchsBox.values.toList();
+    // watchs.sort((a, b) => a.createdAt.compareTo(b.createdAt));
   }
 
   void listenForWatched() async {
-    await Hive.openBox<Watched>("watcheds");
-    final watchedsBox = Hive.box<Watched>("watcheds");
+    //await Hive.openBox<Watched>("watch_history");
+    final watchedsBox = Hive.box<String>("watch_history");
     // final lastTimesBox = Hive.box<String>("lastTimes");
     // final lastTime = lastTimesBox.get("watched");
 
-    List<Watched> watcheds = watchedsBox.values.toList();
-    watcheds.sort((a, b) => a.createdAt.compareTo(b.createdAt));
+    // List<Watched> watcheds = watchedsBox.values.toList();
+    // watcheds.sort((a, b) => a.createdAt.compareTo(b.createdAt));
   }
 
   void listenForUpdates() async {
     //await Hive.openBox<LiveMatch>("updates");
-    final matchesBox = Hive.box<LiveMatch>("matches");
-    List<LiveMatch> matches = matchesBox.values.toList();
+    final matchesBox = Hive.box<String>("matches");
+    List<String> matches = matchesBox.values.toList();
     final lastTimesBox = Hive.box<String>("lastTimes");
-    final lastTime = lastTimesBox.get("matches");
+    // final lastTime = lastTimesBox.get("matches");
 
-    matches.sort((a, b) =>
-        getDateTime(b.date, b.time).compareTo(getDateTime(a.date, a.time)));
+    // matches.sort((a, b) =>
+    //     getDateTime(b.date, b.time).compareTo(getDateTime(a.date, a.time)));
 
-    final newMatches = await getMatches();
-    matchesBox.clear();
-    for (int i = 0; i < newMatches.length; i++) {
-      final match = newMatches[i];
-      matchesBox.put(match.id, match);
-    }
-    matches = newMatches;
-  }
-
-  void listenForContacts() async {
-    //await Hive.openBox<User>("users");
-    //await Hive.openBox<PhoneContact>("contacts");
-
-    final usersBox = Hive.box<User>("users");
-    final phoneContactsBox = Hive.box<PhoneContact>("contacts");
-    final phoneContactsMap = phoneContactsBox.toMap();
-    List<PhoneContact> phoneContacts = phoneContactsBox.values.toList();
-    phoneContacts.sort((a, b) => a.createdAt.compareTo(b.createdAt));
-    // final lastTime =
-    //     phoneContacts.isEmpty ? null : phoneContacts.last.createdAt;
-    List<String> contactIds = phoneContacts.map((value) => value.id).toList();
-    // Request contact permission
-    if (await FlutterContacts.requestPermission()) {
-      //FlutterContacts.addListener(() {});
-      List<Contact> contacts = await FlutterContacts.getContacts();
-      List<String> contactNumbers = [];
-      Map<String, String> namesMap = {};
-      for (int i = 0; i < contacts.length; i++) {
-        final contact = contacts[i];
-        for (var phone in contact.phones) {
-          final phoneNumber = phone.number.replaceAll("-", "");
-          if (phoneContactsMap[phoneNumber] == null) {
-            contactNumbers.add(phoneNumber);
-            namesMap[phoneNumber] = contact.displayName;
-          }
-        }
-      }
-      contactNumbers = contactNumbers.toSet().toList();
-      final contactUsers = await readContactUsers(contactNumbers);
-      for (int i = 0; i < contactUsers.length; i++) {
-        final user = contactUsers[i];
-        contactIds.add(user.id);
-        await addContact(user.id, user.phone, namesMap[user.phone]!, (contact) {
-          phoneContactsBox.put(user.phone, contact);
-          usersBox.put(user.id, user);
-        });
-      }
-    }
-    listenForStories(contactIds);
+    // final newMatches = await getMatches();
+    // matchesBox.clear();
+    // for (int i = 0; i < newMatches.length; i++) {
+    //   final match = newMatches[i];
+    //   matchesBox.put(match.id, match);
+    // }
+    // matches = newMatches;
   }
 
   void listenForStories(List<String> contactIds) async {
@@ -396,7 +362,7 @@ class _MainScreenState extends ConsumerState<MainScreen> {
     });
   }
 
-  void updateInvitesCount(int count) {
+  void updateWatchsCount(int count) {
     badgeCounts[5] = count;
     setState(() {});
   }
@@ -413,15 +379,13 @@ class _MainScreenState extends ConsumerState<MainScreen> {
       body: IndexedStack(
         index: currentIndex,
         children: const [
-          //MatchesScreen(),
-          UpdatesScreen(),
-          WatchedMatchesScreen(),
-          MessagesScreen(),
-          StoriesScreen(),
-          InvitesScreen(),
+          MatchesScreen(),
+          WatchsScreen(),
+          // MessagesScreen(),
+          // StoriesScreen(),
+          ProfileScreen(),
           // WalletScreen(),
           // ContactsScreen(),
-          ProfileScreen(),
         ],
       ),
       bottomNavigationBar: AppBottomNavigationBar(
@@ -459,7 +423,7 @@ class _MainScreenState extends ConsumerState<MainScreen> {
       //       BottomNavigationBarItem(
       //         // icon: Icon(MingCute.star_line),
       //         icon: Icon(MingCute.invite_line),
-      //         label: "Invites",
+      //         label: "Watchs",
       //       ),
       //       BottomNavigationBarItem(
       //         icon: Icon(OctIcons.person),

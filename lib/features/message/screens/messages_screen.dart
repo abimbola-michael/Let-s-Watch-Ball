@@ -8,8 +8,10 @@ import '../../../shared/components/app_icon_button.dart';
 import '../../../shared/components/logo.dart';
 import '../../../shared/components/app_appbar.dart';
 import '../../../theme/colors.dart';
+import '../../user/models/user.dart';
 import '../providers/messages_provider.dart';
 import '../utils/message_utils.dart';
+import 'message_screen.dart';
 import 'messages_list_screen.dart';
 
 class MessagesScreen extends ConsumerStatefulWidget {
@@ -33,6 +35,14 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
     super.dispose();
   }
 
+  void selectContactToMessage() async {
+    // User? user = await context.pushNamedTo(SelectContactScreen.route);
+    // if (user != null) {
+    //   if (!mounted) return;
+    //   context.pushNamedTo(MessageScreen.route, args: {"userId": user.id});
+    // }
+  }
+
   @override
   Widget build(BuildContext context) {
     // final allMessages = ref.read(messagesProvider);
@@ -43,6 +53,7 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
       length: tabs.length,
       child: Scaffold(
         appBar: AppAppBar(
+          hideBackButton: true,
           leading: const Logo(),
           title: "Messages",
           trailing: AppIconButton(
@@ -77,7 +88,7 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
           ),
         ),
         floatingActionButton: FloatingActionButton.small(
-          onPressed: () {},
+          onPressed: selectContactToMessage,
           child: const Icon(EvaIcons.message_circle_outline),
         ),
       ),

@@ -142,14 +142,14 @@ class _JoinWatchScreenState extends State<JoinWatchScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              "Selected Watch Watchers",
+              "Watchers",
               style: context.bodyMedium,
             ),
             AppContainer(
               height: 100,
               child: selectedWatch == null
                   ? Text(
-                      "Tap watch to select",
+                      "Tap to select watch",
                       style: context.bodyMedium,
                     )
                   : ListView.builder(

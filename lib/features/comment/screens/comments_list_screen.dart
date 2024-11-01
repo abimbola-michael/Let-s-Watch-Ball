@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:watchball/features/comment/components/comment_item.dart';
 import 'package:watchball/features/comment/models/comment.dart';
-import '../../invite/components/watch_invite_item.dart';
-import '../../watch/models/watch_invite.dart';
+import '../../watch/components/watch_item.dart';
 
 class CommentsListScreen extends StatelessWidget {
   final List<Comment> comments;

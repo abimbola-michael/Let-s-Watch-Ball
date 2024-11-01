@@ -2,10 +2,16 @@ import 'package:watchball/utils/utils.dart';
 
 import '../models/message.dart';
 
-String getChatId(String userId) {
+String getReceiverId(String userId) {
   List<String> ids = [myId, userId];
   ids.sort();
   return ids.join("_");
+}
+
+String getUserId(String receiverId) {
+  List<String> ids = receiverId.split("_");
+  ids.remove(myId);
+  return ids[0];
 }
 
 Map<String, Message> getGroupedUserMessages(List<Message> messages) {

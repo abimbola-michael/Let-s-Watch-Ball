@@ -1,309 +1,207 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:icons_plus/icons_plus.dart';
+import 'package:watchball/features/match/providers/matches_provider.dart';
 import 'package:watchball/shared/components/logo.dart';
 import 'package:watchball/shared/components/app_appbar.dart';
-import 'package:watchball/shared/components/app_container.dart';
-import 'package:watchball/shared/components/app_tabbar.dart';
-import 'package:watchball/features/update/components/date_tabbar.dart';
-import 'package:watchball/theme/colors.dart';
-import 'package:watchball/utils/extensions.dart';
-import 'package:icons_plus/icons_plus.dart';
+import 'package:watchball/features/match/models/league_matches.dart';
+import 'package:watchball/features/match/models/live_match.dart';
+import 'package:watchball/features/match/screens/matches_list_screen.dart';
+import 'package:watchball/features/watch/services/live_stream_service.dart';
 
 import '../../../shared/components/app_icon_button.dart';
 
+import '../../../shared/components/app_search_bar.dart';
+import '../../../theme/colors.dart';
 import '../../../utils/utils.dart';
-import 'matches_list_screen.dart';
+import '../enums/enums.dart';
+import '../providers/search_matches_provider.dart';
+import '../utils/match_utils.dart';
 
-class MatchesScreen extends StatefulWidget {
-  const MatchesScreen({super.key});
+class MatchesScreen extends ConsumerStatefulWidget {
+  final void Function(LiveMatch match)? onSelect;
+  const MatchesScreen({super.key, this.onSelect});
 
   @override
-  State<MatchesScreen> createState() => _MatchesScreenState();
+  ConsumerState<MatchesScreen> createState() => _MatchesScreenState();
 }
 
-class _MatchesScreenState extends State<MatchesScreen> {
-  int currentIndex = 0;
-  // int playedIndex = 0;
-  // int unplayedIndex = 0;
+class _MatchesScreenState extends ConsumerState<MatchesScreen> {
+  List<String> tabs = ["Played", "Live", "To play"];
 
-  // final _unplayedScrollController = ScrollController();
-  // final _playedScrollController = ScrollController();
+  // List<String> tabs = ["All", "Live", "To play", "Played"];
+  List<LiveMatch> matches = [];
+  List<LeagueMatches> leaguesMatches = [];
+  List<LeagueMatches> toplayLeagueMatches = [];
+  List<LeagueMatches> playedLeagueMatches = [];
+  List<LeagueMatches> liveLeagueMatches = [];
 
-  //late PageController _pageController;
+  bool loading = true;
+  bool isSearch = false;
+  final searchController = TextEditingController();
 
-  List<String> tabs = ["Live", "Played", "Unplayed"];
-  List<String> unplayedTabs = [];
-  List<String> playedTabs = [];
-  DateTime dateTime = DateTime.now();
-  String listType = "Competitions";
   @override
   void initState() {
     // TODO: implement initState
     super.initState();
-    // _pageController = PageController(initialPage: currentIndex);
-
-    //getDates();
+    readLiveMatches();
   }
 
   @override
   void dispose() {
-    // TODO: implement dispose
-    // _pageController.dispose();
-    // _unplayedScrollController.dispose();
-    // _playedScrollController.dispose();
-
+    searchController.dispose();
     super.dispose();
   }
 
-  // void updateTab(int index) {
-  //   _pageController.jumpToPage(index);
-  // }
+  void readLiveMatches() async {
+    // matches = allLiveMatches;
 
-  void updateIndex(int index) {
-    setState(() {
-      currentIndex = index;
-    });
+    matches = await getMatches();
+    matches.sort((a, b) =>
+        getDateTime(a.date, a.time).compareTo(getDateTime(b.date, b.time)));
+    ref.read(matchesProvider.notifier).updateMatches(matches);
+    print("allMatches = $matches");
+
+    Map<String, int> leagueIndices = {};
+    Map<String, int> liveLeagueIndices = {};
+    Map<String, int> toplayLeagueIndices = {};
+    Map<String, int> playedLeagueIndices = {};
+
+    for (int i = 0; i < matches.length; i++) {
+      final match = matches[i];
+      final leagueName = match.league;
+      MatchStatus matchStatus = getMatchStatus(match.status);
+
+      if (leagueIndices[leagueName] == null) {
+        leagueIndices[leagueName] = leaguesMatches.length;
+        leaguesMatches.add(LeagueMatches(league: leagueName, matches: [match]));
+      } else {
+        leaguesMatches[leagueIndices[leagueName]!].matches.add(match);
+      }
+      if (matchStatus == MatchStatus.live) {
+        if (liveLeagueIndices[leagueName] == null) {
+          liveLeagueIndices[leagueName] = liveLeagueMatches.length;
+          liveLeagueMatches
+              .add(LeagueMatches(league: leagueName, matches: [match]));
+        } else {
+          liveLeagueMatches[liveLeagueIndices[leagueName]!].matches.add(match);
+        }
+      } else if (matchStatus == MatchStatus.toPlay) {
+        if (toplayLeagueIndices[leagueName] == null) {
+          toplayLeagueIndices[leagueName] = toplayLeagueMatches.length;
+          toplayLeagueMatches
+              .add(LeagueMatches(league: leagueName, matches: [match]));
+        } else {
+          toplayLeagueMatches[toplayLeagueIndices[leagueName]!]
+              .matches
+              .add(match);
+        }
+      } else {
+        if (playedLeagueIndices[leagueName] == null) {
+          playedLeagueIndices[leagueName] = playedLeagueMatches.length;
+          playedLeagueMatches
+              .add(LeagueMatches(league: leagueName, matches: [match]));
+        } else {
+          playedLeagueMatches[playedLeagueIndices[leagueName]!]
+              .matches
+              .add(match);
+        }
+      }
+    }
+    if (!mounted) return;
+    loading = false;
+    setState(() {});
   }
 
-//   void getDates() {
-//     final now = DateTime.now();
-//     final firstDayOfTheYear = DateTime(now.year, 1, 1);
-//     final firstDayOfTheNextYear = DateTime(now.year + 1, 1, 1);
-//     final days = firstDayOfTheNextYear.difference(firstDayOfTheYear).inDays;
-
-//     final todayDays = now.difference(DateTime(now.year, 1, 1)).inDays + 1;
-//     final remainingDays = days - todayDays;
-// // playedTabs = List.generate(todayDays,
-// //         (i) => getCalDate(firstDayOfTheYear.add(Duration(days: i - 1))));
-//     playedTabs = List.generate(
-//         todayDays, (i) => getCalDate(now.subtract(Duration(days: i))));
-
-//     unplayedTabs = List.generate(
-//         remainingDays,
-//         (i) => getCalDate(
-//             firstDayOfTheYear.add(Duration(days: i + todayDays - 1))));
-//   }
-
-//   // void scrollDateToCenter() async {
-//   //   await Future.delayed(const Duration(milliseconds: 100));
-//   //   if (currentIndex == 1) {
-//   //     scrollToCenter(_playedScrollController, playedIndex);
-//   //   } else if (currentIndex == 2) {
-//   //     scrollToCenter(_unplayedScrollController, unplayedIndex);
-//   //   }
-//   // }
-
-//   void scrollToCenter(ScrollController controller, int index) {
-//     double position = (index * 100) - context.widthPercent(50) + 50;
-//     double max = controller.position.maxScrollExtent;
-//     controller.jumpTo(position < 0
-//         ? 0
-//         : position > max
-//             ? max
-//             : position);
-//   }
-
-//   void updatePlayedIndex(int index) {
-//     setState(() {
-//       playedIndex = index;
-//     });
-//     scrollToCenter(_playedScrollController, playedIndex);
-//   }
-
-//   void updateUnPlayedIndex(int index) {
-//     setState(() {
-//       unplayedIndex = index;
-//     });
-//     scrollToCenter(_unplayedScrollController, unplayedIndex);
-//   }
-
-//   void viewMatch(FootballMatch match) {}
-
-  void updateDateTime(DateTime newDateTime) {
-    setState(() {
-      dateTime = newDateTime;
-    });
+  void startSearch() {
+    isSearch = true;
+    setState(() {});
   }
 
-  void updateListType(String newListType) {
-    setState(() {
-      listType = newListType;
-    });
+  void updateSearch(String value) {
+    ref
+        .read(searchMatchProvider.notifier)
+        .updateSearch(value.trim().toLowerCase());
+  }
+
+  void stopSearch() {
+    ref.read(searchMatchProvider.notifier).updateSearch("");
+
+    searchController.clear();
+    isSearch = false;
+    setState(() {});
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: const AppAppBar(
-        leading: Logo(),
-        title: "Matches",
-        trailing: AppIconButton(icon: EvaIcons.search),
-      ),
-      body: Column(
-        children: [
-          // if (currentIndex == 0)
-          //   const TabItem(selected: true, tab: "Live")
-          // else if (currentIndex == 1)
-          //   DateTabBar(
-          //     reverse: true,
-          //     tabs: playedTabs,
-          //     scrollController: _playedScrollController,
-          //     selectedTab: playedIndex,
-          //     onTabChanged: updatePlayedIndex,
-          //   )
-          // else if (currentIndex == 2)
-          //   DateTabBar(
-          //     tabs: unplayedTabs,
-          //     scrollController: _unplayedScrollController,
-          //     selectedTab: unplayedIndex,
-          //     onTabChanged: updateUnPlayedIndex,
-          //   ),
-          Expanded(
-            child: IndexedStack(
-              index: currentIndex,
-              children: List.generate(tabs.length, (index) {
-                final tab = tabs[index];
-                return Container();
-                // return MatchesListScreen(
-                //   type: tab,
-                //   dateTime: dateTime,
-                //   onChangeDateTime: updateDateTime,
-                //   listType: listType,
-                //   onChangeListType: updateListType,
-                // );
-              }),
-            ),
-            // child: Padding(
-            //   padding: const EdgeInsets.symmetric(horizontal: 20),
-            //   child: PageView.builder(
-            //     itemCount: tabs.length,
-            //     itemBuilder: (context, index) {
-            //       final tab = tabs[index];
-            //       return MatchesListScreen(
-            //         type: tab,
-            //       );
-            //     },
-            //     controller: _pageController,
-            //     onPageChanged: updatePage,
-            //   ),
-            // ),
+    return PopScope(
+      canPop: !isSearch,
+      onPopInvoked: (pop) {
+        if (pop) return;
+        if (isSearch) {
+          stopSearch();
+        }
+      },
+      child: DefaultTabController(
+        length: tabs.length,
+        initialIndex: 1,
+        child: Scaffold(
+          appBar: (isSearch
+              ? AppSearchBar(
+                  hint: "Search Matches",
+                  controller: searchController,
+                  onChanged: updateSearch,
+                  onCloseSearch: stopSearch,
+                )
+              : AppAppBar(
+                  hideBackButton: widget.onSelect == null,
+                  leading: widget.onSelect != null ? null : const Logo(),
+                  title: widget.onSelect != null ? "Select Match" : "Matches",
+                  trailing: AppIconButton(
+                    icon: EvaIcons.search,
+                    onPressed: startSearch,
+                  ),
+                )) as PreferredSizeWidget?,
+          body: Column(
+            children: [
+              TabBar(
+                padding: EdgeInsets.zero,
+                isScrollable: true,
+                tabAlignment: TabAlignment.center,
+                dividerColor: transparent,
+                tabs: List.generate(
+                  tabs.length,
+                  (index) {
+                    final tab = tabs[index];
+                    return Tab(text: tab);
+                  },
+                ),
+              ),
+              Expanded(
+                child: TabBarView(
+                  children: List.generate(tabs.length, (index) {
+                    return MatchesListScreen(
+                      onSelect: widget.onSelect,
+                      loading: loading,
+                      leaguesMatches: index == 0
+                          ? playedLeagueMatches
+                          : index == 1
+                              ? liveLeagueMatches
+                              : toplayLeagueMatches,
+                    );
+                  }),
+                ),
+              )
+            ],
           ),
-          AppTabBar(
-            selectedTab: currentIndex,
-            tabs: tabs,
-            onTabChanged: updateIndex,
-          ),
-        ],
+          // floatingActionButton: FloatingActionButton.small(
+          //   onPressed: () {},
+          //   child: const Icon(EvaIcons.calendar),
+          // ),
+        ),
       ),
-      // body: NestedScrollView(
-      //   headerSliverBuilder: (context, innerBoxIsScrolled) {
-      //     return [
-      //       SliverAppBar(
-      //         expandedHeight: 180,
-      //         // pinned: true,
-      //         // floating: true,
-      //         backgroundColor: transparent,
-      //         flexibleSpace: AppContainer(
-      //           //height: 180,
-      //           width: double.infinity,
-      //           child: PageView.builder(
-      //             itemCount: liveMatches.length,
-      //             itemBuilder: (context, index) {
-      //               final match = liveMatches[index];
-      //               return Padding(
-      //                 padding: const EdgeInsets.symmetric(horizontal: 8),
-      //                 child: MatchItem(match: match),
-      //               );
-      //             },
-      //             controller: _livePageController,
-      //             onPageChanged: updateLiveMatchPage,
-      //           ),
-      //         ),
-      //       )
-      //     ];
-      //   },
-      //   body: Padding(
-      //     padding: const EdgeInsets.symmetric(horizontal: 20),
-      //     child: Column(
-      //       children: [
-      //         DateTabBar(
-      //           tabs: tabs,
-      //           scrollController: _scrollController,
-      //           selectedTab: currentIndex,
-      //           onTabChanged: updateIndex,
-      //         ),
-      //         Expanded(
-      //           child: PageView.builder(
-      //             itemCount: tabs.length,
-      //             itemBuilder: (context, index) {
-      //               final tab = tabs[index];
-      //               return MatchesListScreen(
-      //                 type: tab,
-      //               );
-      //             },
-      //             controller: _pageController,
-      //             onPageChanged: updatePage,
-      //           ),
-      //         )
-      //       ],
-      //     ),
-      //   ),
-      // ),
-      // body: Column(
-      //   children: [
-      //     AppContainer(
-      //       height: 180,
-      //       width: double.infinity,
-      //       child: PageView.builder(
-      //         itemCount: liveMatches.length,
-      //         itemBuilder: (context, index) {
-      //           final match = liveMatches[index];
-      //           return Padding(
-      //             padding: const EdgeInsets.symmetric(horizontal: 8),
-      //             child: MatchItem(match: match),
-      //           );
-      //           // return LiveUpdateItem(
-      //           //   match: match,
-      //           //   onPressed: () => viewMatch(match),
-      //           // );
-      //         },
-      //         controller: _livePageController,
-      //         onPageChanged: updateLiveMatchPage,
-      //       ),
-      //     ),
-      //     const SizedBox(
-      //       height: 20,
-      //     ),
-      //     Expanded(
-      //       child: Padding(
-      //         padding: const EdgeInsets.symmetric(horizontal: 20),
-      //         child: Column(
-      //           children: [
-      //             DateTabBar(
-      //               tabs: tabs,
-      //               scrollController: _scrollController,
-      //               selectedTab: currentIndex,
-      //               onTabChanged: updateIndex,
-      //             ),
-      //             Expanded(
-      //               child: PageView.builder(
-      //                 itemCount: tabs.length,
-      //                 itemBuilder: (context, index) {
-      //                   final tab = tabs[index];
-      //                   return MatchesListScreen(
-      //                     type: tab,
-      //                   );
-      //                 },
-      //                 controller: _pageController,
-      //                 onPageChanged: updatePage,
-      //               ),
-      //             )
-      //           ],
-      //         ),
-      //       ),
-      //     )
-      //   ],
-      // ),
     );
   }
 }

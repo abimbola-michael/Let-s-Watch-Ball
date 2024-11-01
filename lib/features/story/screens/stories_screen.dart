@@ -40,6 +40,7 @@ class _StoriesScreenState extends State<StoriesScreen> {
       length: tabs.length,
       child: Scaffold(
         appBar: AppAppBar(
+          hideBackButton: true,
           leading: const Logo(),
           title: "Stories",
           trailing: AppIconButton(

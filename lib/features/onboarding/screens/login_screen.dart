@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:icons_plus/icons_plus.dart';
@@ -6,6 +8,7 @@ import 'package:watchball/features/main/screens/main_screen.dart';
 import 'package:watchball/theme/colors.dart';
 import 'package:watchball/utils/extensions.dart';
 
+import '../../../firebase/firebase_notification.dart';
 import '../../../shared/views/loading_overlay.dart';
 import '../../../shared/components/logo.dart';
 import '../components/social.dart';
@@ -15,6 +18,7 @@ import '../../../shared/components/app_text_field.dart';
 import '../../../firebase/auth_methods.dart';
 import '../../user/services/user_service.dart';
 import '../../../utils/utils.dart';
+import 'forgot_password_screen.dart';
 import 'signup_screen.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -45,6 +49,10 @@ class _LoginScreenState extends State<LoginScreen> {
     context.pushNamedAndPop(SignupScreen.route);
   }
 
+  void gotoForgotPassword() {
+    context.pushNamedAndPop(ForgotPasswordScreen.route);
+  }
+
   void gotoNext() {
     if (formKey.currentState!.validate()) {
       //context.pushNamedTo(EnterAddressScreen.route);
@@ -67,13 +75,14 @@ class _LoginScreenState extends State<LoginScreen> {
 
         if (result.user != null) {
           if (result.user!.emailVerified) {
+            FirebaseNotification().updateFirebaseToken();
             context.pushNamedAndPop(MainScreen.route);
           } else {
             context.showAlertDialog((context) {
               return AppAlertDialog(
                 title: "Verify Email",
                 message:
-                    "Your email is not verified. Check your email or Resend if not found",
+                    "Your email is not verified. Check your email or Resend if not found or exprired",
                 actions: const ["Close", "Resend"],
                 onPresseds: [
                   () {
@@ -108,8 +117,20 @@ class _LoginScreenState extends State<LoginScreen> {
       if (result == null || result.user == null) return;
       if (result.additionalUserInfo?.isNewUser ?? false) {
         final user = result.user!;
-        await createUser(user.uid, user.email ?? "", user.displayName ?? "",
-            user.phoneNumber ?? "", user.photoURL ?? "");
+        String username =
+            user.displayName?.toLowerCase().replaceAll(" ", "_") ??
+                user.email?.substring(0, user.email!.indexOf("@")) ??
+                "";
+        while (await usernameExists(username)) {
+          username += Random().nextInt(10).toString();
+        }
+        await createUser(
+            user.uid,
+            user.email ?? "",
+            username,
+            user.displayName ?? "",
+            user.phoneNumber ?? "",
+            user.photoURL ?? "");
       }
       if (!mounted) return;
       context.pushNamedAndPop(MainScreen.route);
@@ -190,6 +211,17 @@ class _LoginScreenState extends State<LoginScreen> {
                             onPressed: gotoSignUp,
                           ),
                         ],
+                      ),
+                      Center(
+                        child: AppTextButton(
+                          text: "Forgot Password",
+                          style: const TextStyle(
+                            color: primaryColor,
+                            fontWeight: FontWeight.w400,
+                            fontSize: 12,
+                          ),
+                          onPressed: gotoForgotPassword,
+                        ),
                       ),
                       const SizedBox(height: 30),
                       Row(

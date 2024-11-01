@@ -49,7 +49,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   void checkIfLoggedIn() {
     try {
       authSub = FirebaseAuth.instance.authStateChanges().listen((user) {
-        if (user != null) {
+        if (user != null && user.emailVerified) {
           gotoMainScreen();
         } else {
           setState(() {

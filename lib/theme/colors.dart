@@ -15,6 +15,7 @@ final lighterWhite = Colors.white.withOpacity(0.5);
 final lightestWhite = Colors.white.withOpacity(0.1);
 final faintWhite = Colors.white.withOpacity(0.04);
 
+Color get bgTint => isDarkMode ? black : white;
 Color get tint => isDarkMode ? white : black;
 Color get lightTint => isDarkMode ? lightWhite : lightBlack;
 Color get lighterTint => isDarkMode ? lighterWhite : lighterBlack;

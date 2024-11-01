@@ -2,8 +2,10 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<key>GADApplicationIdentifier</key>
+	<string>ca-app-pub-2803440295563056~2367308961</string>
 	<key>NSContactsUsageDescription</key>
-    <string>Let's Watch ball needs your contact to find you people to watch with and checkout stories</string>
+    <string>Watch ball needs your contact to find you people to watch with and checkout stories</string>
 	<key>NSCameraUsageDescription</key>
 	<string>$(PRODUCT_NAME) Camera Usage!</string>
 	<key>NSMicrophoneUsageDescription</key>
@@ -13,7 +15,7 @@
 	<key>NSCameraUsageDescription&lt;string&gt;To scan cards&lt;/string&gt;</key>
 	<string>To scan cards</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>Let's Watch Ball wants to access your location</string>
+	<string>Watch Ball wants to access your location</string>
 	<key>NSLocationAlwaysUsageDescription</key>
 	<string>It is required for currency</string>
 	<key>NSFaceIDUsageDescription</key>

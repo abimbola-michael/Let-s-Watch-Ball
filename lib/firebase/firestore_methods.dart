@@ -86,7 +86,7 @@ class FirestoreMethods {
         final value = values[i];
         if (path.length.isOdd) {
           final ref = getCollectionRef(path);
-          final id = firestoreMethods.getId(path);
+          final id = getId(path);
           batch.set(ref.doc(id), value, merge ? SetOptions(merge: true) : null);
         } else {
           final ref = getDocumentRef(path);
@@ -132,7 +132,7 @@ class FirestoreMethods {
         final value = values[i];
         if (path.length.isOdd) {
           final ref = getCollectionRef(path);
-          final id = firestoreMethods.getId(path);
+          final id = getId(path);
           batch.update(ref.doc(id), value);
         } else {
           final ref = getDocumentRef(path);

@@ -1,77 +1,69 @@
 // ignore_for_file: public_member_api_docs, sort_constructors_first
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
+
+import '../../user/enums/enums.dart';
+
 class PhoneContact {
-  String id;
   String phone;
-  String name;
+  String? name;
   String createdAt;
-  String modifiedAt;
-  bool canSeeStories;
-  bool canMessage;
-  bool canInviteToWatch;
-  bool canJoinWatch;
+  String? modifiedAt;
+  ContactStatus? contactStatus;
+  List<String>? userIds;
+
   PhoneContact({
-    required this.id,
     required this.phone,
     required this.name,
     required this.createdAt,
     required this.modifiedAt,
-    required this.canSeeStories,
-    required this.canMessage,
-    required this.canInviteToWatch,
-    required this.canJoinWatch,
+    required this.contactStatus,
+    this.userIds,
   });
 
   PhoneContact copyWith({
-    String? id,
     String? phone,
     String? name,
     String? createdAt,
     String? modifiedAt,
-    bool? canSeeStories,
-    bool? canMessage,
-    bool? canInviteToWatch,
-    bool? canJoinWatch,
+    ContactStatus? contactStatus,
+    List<String>? userIds,
   }) {
     return PhoneContact(
-      id: id ?? this.id,
       phone: phone ?? this.phone,
       name: name ?? this.name,
       createdAt: createdAt ?? this.createdAt,
       modifiedAt: modifiedAt ?? this.modifiedAt,
-      canSeeStories: canSeeStories ?? this.canSeeStories,
-      canMessage: canMessage ?? this.canMessage,
-      canInviteToWatch: canInviteToWatch ?? this.canInviteToWatch,
-      canJoinWatch: canJoinWatch ?? this.canJoinWatch,
+      contactStatus: contactStatus ?? this.contactStatus,
+      userIds: userIds ?? this.userIds,
     );
   }
 
   Map<String, dynamic> toMap() {
     return <String, dynamic>{
-      'id': id,
       'phone': phone,
       'name': name,
       'createdAt': createdAt,
       'modifiedAt': modifiedAt,
-      'canSeeStories': canSeeStories,
-      'canMessage': canMessage,
-      'canInviteToWatch': canInviteToWatch,
-      'canJoinWatch': canJoinWatch,
+      'contactStatus': contactStatus?.index,
+      'userIds': userIds,
     };
   }
 
   factory PhoneContact.fromMap(Map<String, dynamic> map) {
     return PhoneContact(
-      id: map['id'] as String,
       phone: map['phone'] as String,
-      name: map['name'] as String,
+      name: map['name'] != null ? map['name'] as String : null,
       createdAt: map['createdAt'] as String,
-      modifiedAt: map['modifiedAt'] as String,
-      canSeeStories: map['canSeeStories'] as bool,
-      canMessage: map['canMessage'] as bool,
-      canInviteToWatch: map['canInviteToWatch'] as bool,
-      canJoinWatch: map['canJoinWatch'] as bool,
+      modifiedAt:
+          map['modifiedAt'] != null ? map['modifiedAt'] as String : null,
+      contactStatus: map['contactStatus'] != null
+          ? ContactStatus.values[map['contactStatus']]
+          : null,
+      userIds: map['userIds'] != null
+          ? List<String>.from((map['userIds'] as List<dynamic>))
+          : null,
     );
   }
 
@@ -82,34 +74,28 @@ class PhoneContact {
 
   @override
   String toString() {
-    return 'PhoneContact(id: $id, phone: $phone, name: $name, createdAt: $createdAt, modifiedAt: $modifiedAt, canSeeStories: $canSeeStories, canMessage: $canMessage, canInviteToWatch: $canInviteToWatch, canJoinWatch: $canJoinWatch)';
+    return 'PhoneContact(phone: $phone, name: $name, createdAt: $createdAt, modifiedAt: $modifiedAt, contactStatus: $contactStatus, userIds: $userIds)';
   }
 
   @override
   bool operator ==(covariant PhoneContact other) {
     if (identical(this, other)) return true;
 
-    return other.id == id &&
-        other.phone == phone &&
+    return other.phone == phone &&
         other.name == name &&
         other.createdAt == createdAt &&
         other.modifiedAt == modifiedAt &&
-        other.canSeeStories == canSeeStories &&
-        other.canMessage == canMessage &&
-        other.canInviteToWatch == canInviteToWatch &&
-        other.canJoinWatch == canJoinWatch;
+        other.contactStatus == contactStatus &&
+        listEquals(other.userIds, userIds);
   }
 
   @override
   int get hashCode {
-    return id.hashCode ^
-        phone.hashCode ^
+    return phone.hashCode ^
         name.hashCode ^
         createdAt.hashCode ^
         modifiedAt.hashCode ^
-        canSeeStories.hashCode ^
-        canMessage.hashCode ^
-        canInviteToWatch.hashCode ^
-        canJoinWatch.hashCode;
+        contactStatus.hashCode ^
+        userIds.hashCode;
   }
 }

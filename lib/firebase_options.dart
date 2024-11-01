@@ -63,6 +63,8 @@ class DefaultFirebaseOptions {
     messagingSenderId: '1046259746616',
     projectId: 'watchball',
     storageBucket: 'watchball.appspot.com',
+    androidClientId: '1046259746616-0drs0s7tg7lahng9l9prdi6udje7rtgq.apps.googleusercontent.com',
+    iosClientId: '1046259746616-ikp0l0rqegsmairnp4p6sg32gjona49n.apps.googleusercontent.com',
     iosBundleId: 'com.hms.watchball',
   );
 
@@ -72,6 +74,8 @@ class DefaultFirebaseOptions {
     messagingSenderId: '1046259746616',
     projectId: 'watchball',
     storageBucket: 'watchball.appspot.com',
+    androidClientId: '1046259746616-0drs0s7tg7lahng9l9prdi6udje7rtgq.apps.googleusercontent.com',
+    iosClientId: '1046259746616-ikp0l0rqegsmairnp4p6sg32gjona49n.apps.googleusercontent.com',
     iosBundleId: 'com.hms.watchball',
   );
 

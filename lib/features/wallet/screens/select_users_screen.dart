@@ -185,6 +185,7 @@ class _SelectedUsersScreenState extends State<SelectedUsersScreen> {
                     user: user,
                     selected: selected,
                     onPressed: () => toggleSelect(user),
+                    onShare: (platform) {},
                   );
                 },
               ),

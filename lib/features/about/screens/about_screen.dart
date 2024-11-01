@@ -67,20 +67,20 @@ class _AboutScreenState extends State<AboutScreen> {
           const SizedBox(
             height: 12,
           ),
-          Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              const AboutItem(title: "My Football Nickname", value: "Rooney"),
-              const AboutItem(title: "My Goat", value: "C Ronaldo"),
-              const AboutItem(title: "My Club", value: "Real Madrid"),
-              const AboutItem(
-                  title: "My Best Player in Club", value: "Ronaldo"),
-              const AboutItem(title: "My Country", value: "Argentina"),
-              const AboutItem(
-                  title: "My Best Player in Country", value: "Ronaldo"),
-            ],
-          ),
+          // Column(
+          //   mainAxisSize: MainAxisSize.min,
+          //   crossAxisAlignment: CrossAxisAlignment.stretch,
+          //   children: [
+          //     const AboutItem(title: "My Football Nickname", value: "Rooney"),
+          //     const AboutItem(title: "My Goat", value: "C Ronaldo"),
+          //     const AboutItem(title: "My Club", value: "Real Madrid"),
+          //     const AboutItem(
+          //         title: "My Best Player in Club", value: "Ronaldo"),
+          //     const AboutItem(title: "My Country", value: "Argentina"),
+          //     const AboutItem(
+          //         title: "My Best Player in Country", value: "Ronaldo"),
+          //   ],
+          // ),
         ],
       ),
     );

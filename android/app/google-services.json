@@ -7,31 +7,33 @@
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:1046259746616:android:12144bb7c0a8e28d9de3cd",
-        "android_client_info": {
-          "package_name": "com.example.watchball"
-        }
-      },
-      "oauth_client": [],
-      "api_key": [
-        {
-          "current_key": "AIzaSyDg2wrotOai0OmdSrAsNGBAs7pMmWLBSvM"
-        }
-      ],
-      "services": {
-        "appinvite_service": {
-          "other_platform_oauth_client": []
-        }
-      }
-    },
-    {
-      "client_info": {
         "mobilesdk_app_id": "1:1046259746616:android:dafa99c97d61e9289de3cd",
         "android_client_info": {
           "package_name": "com.hms.watchball"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "1046259746616-0drs0s7tg7lahng9l9prdi6udje7rtgq.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.hms.watchball",
+            "certificate_hash": "dc729205d591b569cbef087b4f448960ccebf94a"
+          }
+        },
+        {
+          "client_id": "1046259746616-lon25mvj89sda6k1q90gnp2j0kkntrg0.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.hms.watchball",
+            "certificate_hash": "53879e6c1b9b31bc89e8d2edeae9ccc86bbe7519"
+          }
+        },
+        {
+          "client_id": "1046259746616-h5p778t5f9pkb44pan3q57akg8i5cdsn.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyDg2wrotOai0OmdSrAsNGBAs7pMmWLBSvM"
@@ -39,7 +41,19 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1046259746616-h5p778t5f9pkb44pan3q57akg8i5cdsn.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "1046259746616-6a7dg7jcj3dlcm63gt3njdj18679lh03.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.watchball"
+              }
+            }
+          ]
         }
       }
     }

@@ -22,7 +22,7 @@ Future<Message> createMessage(
   final id = firestoreMethods.getId(["users", myId, "messages"]);
   // final matchString = getMatchString(match);
   //final matchId = match?.id ?? "";
-  final receiverId = getChatId(userId);
+  final receiverId = getReceiverId(userId);
   final time = timeNow;
 
   final message = Message(

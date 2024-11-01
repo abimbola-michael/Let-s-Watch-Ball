@@ -1,13 +1,20 @@
+import 'dart:io';
+import 'dart:math';
+
+import 'package:country_code_picker_plus/country_code_picker_plus.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:icons_plus/icons_plus.dart';
 import 'package:watchball/features/main/screens/main_screen.dart';
 import 'package:watchball/firebase/auth_methods.dart';
 import 'package:watchball/features/user/services/user_service.dart';
+import 'package:watchball/main.dart';
 import 'package:watchball/utils/extensions.dart';
 
 import '../../../shared/views/loading_overlay.dart';
 import '../../../shared/components/logo.dart';
+import '../../../utils/country_code_utils.dart';
 import '../components/social.dart';
 import '../../../shared/components/app_button.dart';
 import '../../../shared/components/app_text_button.dart';
@@ -28,19 +35,41 @@ class SignupScreen extends StatefulWidget {
 class _SignupScreenState extends State<SignupScreen> {
   final authMethods = AuthMethods();
   final _usernameController = TextEditingController();
+  final _nameController = TextEditingController();
   final _phoneNumberController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   GlobalKey<FormState> formKey = GlobalKey<FormState>();
+
+  bool usernameExist = false;
+  bool acceptTerms = false;
+  bool canGoogleSignIn = kIsWeb || !Platform.isWindows;
+
   bool loading = false;
+  String countryDialCode = "";
+  @override
+  void initState() {
+    super.initState();
+    getCountryCode();
+  }
+
   @override
   void dispose() {
-    // TODO: implement dispose
     _usernameController.dispose();
+    _nameController.dispose();
     _phoneNumberController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
+  }
+
+  void getCountryCode() async {
+    final code = await getSimCountryCode();
+    if (code != null) {
+      countryCode = code;
+      countryDialCode = code;
+    }
+    setState(() {});
   }
 
   void signUp() async {
@@ -51,14 +80,27 @@ class _SignupScreenState extends State<SignupScreen> {
       final email = _emailController.text.trim();
       final password = _passwordController.text.trim();
       final username = _usernameController.text.trim();
-      final phoneNumber = _phoneNumberController.text.trim();
+      final name = getValidName(_nameController.text.trim());
+      final phoneNumber =
+          _phoneNumberController.text.trim().replaceAll(" ", "");
+      final number =
+          phoneNumber.startsWith("0") ? phoneNumber.substring(1) : phoneNumber;
+
+      usernameExist = await usernameExists(username);
+
+      if (usernameExist) {
+        if (!mounted) return;
+        context.showSnackBar("Username already exist");
+        setState(() {});
+        return;
+      }
 
       //await Future.delayed(const Duration(seconds: 2));
       try {
         final result = await authMethods.createAccount(email, password);
         if (result.user == null) return;
-        await createUser(result.user!.uid, email, username, phoneNumber, "");
-        // await signup(email, password, firstName, lastName);
+        await createUser(result.user!.uid, email, username, name,
+            "$countryDialCode$number", "");
         await authMethods.sendEmailVerification();
         if (!mounted) return;
 
@@ -89,8 +131,20 @@ class _SignupScreenState extends State<SignupScreen> {
       if (result == null || result.user == null) return;
       if (result.additionalUserInfo?.isNewUser ?? false) {
         final user = result.user!;
-        await createUser(user.uid, user.email ?? "", user.displayName ?? "",
-            user.phoneNumber ?? "", user.photoURL ?? "");
+        String username =
+            user.displayName?.toLowerCase().replaceAll(" ", "_") ??
+                user.email?.substring(0, user.email!.indexOf("@")) ??
+                "";
+        while (await usernameExists(username)) {
+          username += Random().nextInt(10).toString();
+        }
+        await createUser(
+            user.uid,
+            user.email ?? "",
+            username,
+            user.displayName ?? "",
+            user.phoneNumber ?? "",
+            user.photoURL ?? "");
       }
       if (!mounted) return;
       context.pushNamedAndPop(MainScreen.route);
@@ -136,23 +190,66 @@ class _SignupScreenState extends State<SignupScreen> {
                       Text("Sign Up",
                           style: context.headlineLarge?.copyWith(fontSize: 36)),
                       const SizedBox(height: 30),
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Expanded(
-                            child: AppTextField(
-                              hintText: "Username",
-                              controller: _usernameController,
-                            ),
+                      // Row(
+                      //   crossAxisAlignment: CrossAxisAlignment.start,
+                      //   children: [
+                      //     Expanded(
+                      //       child: AppTextField(
+                      //         hintText: "Name",
+                      //         controller: _nameController,
+                      //       ),
+                      //     ),
+                      //     const SizedBox(width: 10),
+                      //     Expanded(
+                      //       child: AppTextField(
+                      //         hintText: "Phone number",
+                      //         controller: _phoneNumberController,
+                      //       ),
+                      //     ),
+                      //   ],
+                      // ),
+                      AppTextField(
+                        hintText: "Username",
+                        controller: _usernameController,
+                        validator: (value) {
+                          if (usernameExist) {
+                            return "Username already exist";
+                          }
+                          return null;
+                        },
+                      ),
+                      AppTextField(
+                        hintText: "Name",
+                        controller: _nameController,
+                      ),
+                      AppTextField(
+                        hintText: "Phone number",
+                        controller: _phoneNumberController,
+                        validator: (value) {
+                          if (value!.startsWith("+")) {
+                            return "Select Country dial code and just input the rest of your number";
+                          }
+                          return null;
+                        },
+                        prefix: SizedBox(
+                          width: 50,
+                          child: CountryCodePicker(
+                            textStyle:
+                                context.bodyMedium?.copyWith(color: tint),
+                            padding: const EdgeInsets.only(left: 10),
+                            mode: CountryCodePickerMode.bottomSheet,
+                            initialSelection:
+                                countryCode.isNotEmpty ? countryCode : "US",
+                            showFlag: false,
+                            showDropDownButton: false,
+                            dialogBackgroundColor: bgTint,
+                            onChanged: (country) {
+                              setState(() {
+                                countryDialCode = country.dialCode;
+                              });
+                            },
                           ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: AppTextField(
-                              hintText: "Phone number",
-                              controller: _phoneNumberController,
-                            ),
-                          ),
-                        ],
+                        ),
                       ),
                       AppTextField(
                         hintText: "Email",

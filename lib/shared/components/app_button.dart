@@ -22,6 +22,7 @@ class AppButton extends StatelessWidget {
   final bool outlined;
   final EdgeInsets? padding;
   final EdgeInsets? margin;
+  final bool loading;
 
   const AppButton(
       {super.key,
@@ -39,7 +40,8 @@ class AppButton extends StatelessWidget {
       this.wrapped = false,
       this.outlined = false,
       this.icon,
-      this.margin});
+      this.margin,
+      this.loading = false});
 
   @override
   Widget build(BuildContext context) {
@@ -68,6 +70,15 @@ class AppButton extends StatelessWidget {
             Row(
               mainAxisSize: MainAxisSize.min,
               children: [
+                if (loading) ...[
+                  const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(
+                        color: Colors.white,
+                      )),
+                  const SizedBox(width: 10),
+                ],
                 if (icon != null)
                   SvgAsset(
                     name: icon!,

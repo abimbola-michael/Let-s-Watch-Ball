@@ -14,10 +14,11 @@ import 'package:watchball/utils/extensions.dart';
 import '../main.dart';
 import '../shared/models/list_change.dart';
 
-String myId = FirebaseAuth.instance.currentUser?.uid ?? "";
-bool isWindows = !kIsWeb && Platform.isWindows;
-double statusBarHeight = window.padding.top / window.devicePixelRatio;
-String timeNow = DateTime.now().toDateTimeString;
+String get myId => FirebaseAuth.instance.currentUser?.uid ?? "";
+bool get isAndroidAndIos => !kIsWeb && (Platform.isAndroid || Platform.isIOS);
+bool get isWindows => !kIsWeb && Platform.isWindows;
+double get statusBarHeight => window.padding.top / window.devicePixelRatio;
+String get timeNow => DateTime.now().toDateTimeString;
 
 bool get isDarkMode =>
     sharedPreferences.getBool("darkmode") ??
@@ -36,6 +37,17 @@ bool isValidPhoneNumber(String phoneNumber, [int limit = 10]) {
   //     RegExp(r'^[0-9]{10}$'); // Assuming 10-digit phone number format
   final RegExp phoneRegex = RegExp(r'^[0-9]'); //
   return phoneRegex.hasMatch(phoneNumber);
+}
+
+bool isValidUsername(String name) {
+  // Check if the name is not empty
+  if (name.isEmpty) {
+    return false;
+  }
+
+  // Check if the name contains only alphabetic characters, spaces, or hyphens
+  final RegExp nameRegex = RegExp(r'^[a-zA-Z0-9\-_]+$');
+  return nameRegex.hasMatch(name);
 }
 
 bool isValidName(String name) {
@@ -93,9 +105,23 @@ String durationToString(int seconds) {
   String twoDigits(int n) => n.toString().padLeft(2, "0");
   String twoDigitMinutes = twoDigits(duration.inMinutes.remainder(60));
   String twoDigitSeconds = twoDigits(duration.inSeconds.remainder(60));
-  // if (duration.inHours > 0) {
-  //   return "${duration.inHours}:$twoDigitMinutes:$twoDigitSeconds";
-  // }
+
+  if (duration.inDays > 0) {
+    if (duration.inDays > 365) {
+      return "${duration.inDays.remainder(365)} years";
+    }
+    if (duration.inDays > 30) {
+      return "${duration.inDays.remainder(30)} months";
+    }
+    if (duration.inDays > 7) {
+      return "${duration.inDays.remainder(7)} weeks";
+    }
+    return "${duration.inDays} days";
+    //return "${duration.inDays}:${duration.inHours.remainder(24)}:$twoDigitMinutes:$twoDigitSeconds";
+  }
+  if (duration.inHours > 0) {
+    return "${duration.inHours}:$twoDigitMinutes:$twoDigitSeconds";
+  }
   return "$twoDigitMinutes:$twoDigitSeconds";
 }
 
@@ -270,7 +296,7 @@ List<String> getTimeZoneDateTime(LiveMatch match) {
 
   return [
     DateFormat("dd/MM/yyyy").format(localDateTime),
-    DateFormat("hh:mm a").format(localDateTime)
+    DateFormat("h:mm a").format(localDateTime)
   ];
 }
 
@@ -418,3 +444,13 @@ List<ListChange<T>> getListChanges<T>(
 
   return result;
 }
+
+String getValidName(String name) {
+  return name.contains(" ")
+      ? name.split(" ").where((element) => element.isNotEmpty).join(" ")
+      : name;
+}
+
+// void launchUrl(String url) async{
+//   if(!(await lau))
+// }

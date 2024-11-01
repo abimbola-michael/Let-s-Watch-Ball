@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
+import '../shared/components/app_alert_dialog.dart';
 import '../shared/components/app_bottom_sheet.dart';
 import '../firebase/firestore_methods.dart';
 import '../theme/colors.dart';
@@ -23,6 +24,23 @@ extension ListExtensions<T> on List<T> {
       }
     }
     return result;
+  }
+
+  String toStringWithCommaandAnd(String Function(T t) callback,
+      [String addition = ""]) {
+    String finalString = "";
+    for (int i = 0; i < length; i++) {
+      final string = addition + callback(this[i]);
+      if (i != 0) {
+        if (i != length - 1 && length > 2) {
+          finalString += ", ";
+        } else if (i == length - 1) {
+          finalString += " and ";
+        }
+      }
+      finalString += string;
+    }
+    return finalString;
   }
 }
 
@@ -73,7 +91,7 @@ extension ContextExtension on BuildContext {
   Future pushReplacementTo(Widget page) => Navigator.of(this)
       .pushReplacement(MaterialPageRoute(builder: (context) => page));
 
-  get args => ModalRoute.of(this)?.settings.arguments;
+  get args => ModalRoute.of(this)?.settings.arguments ?? {};
   Future showAppBottomSheet(WidgetBuilder builder) {
     return showModalBottomSheet(
       backgroundColor: Colors.transparent,
@@ -105,6 +123,17 @@ extension ContextExtension on BuildContext {
         backgroundColor: isError ? Colors.red : primaryColor));
   }
 
+  Future<bool> showComfirmationDialog(String title, String message) async {
+    final result = await showAlertDialog((context) {
+      return AppAlertDialog(
+          title: title,
+          message: message,
+          actions: const ["No", "Yes"],
+          onPresseds: [() => context.pop(), () => context.pop(true)]);
+    });
+
+    return result != null;
+  }
   // void showComfirmationSnackbar(String message) {
   //   ScaffoldMessenger.of(this).showSnackBar(
   //     SnackBar(
@@ -121,6 +150,59 @@ extension ContextExtension on BuildContext {
 
 extension DateTimeExtensions on DateTime {
   String get toDateTimeString => millisecondsSinceEpoch.toString();
+
+  String get time => DateFormat.jm().format(this);
+  String get date => DateFormat.yMMMd().format(this);
+  String get hour => DateFormat("hh").format(this);
+  String timeAgo({bool numericDates = true}) {
+    final date2 = DateTime.now();
+    final difference = date2.difference(this);
+    if ((difference.inDays / 7).floor() >= 1) {
+      return (numericDates) ? '1 week ago' : 'Last week';
+    } else if (difference.inDays >= 2) {
+      return '${difference.inDays} days ago';
+    } else if (difference.inDays >= 1) {
+      return (numericDates) ? '1 day ago' : 'Yesterday';
+    } else if (difference.inHours >= 2) {
+      return '${difference.inHours} hours ago';
+    } else if (difference.inHours >= 1) {
+      return (numericDates) ? '1 hour ago' : 'An hour ago';
+    } else if (difference.inMinutes >= 2) {
+      return '${difference.inMinutes} minutes ago';
+    } else if (difference.inMinutes >= 1) {
+      return (numericDates) ? '1 minute ago' : 'A minute ago';
+    } else if (difference.inSeconds >= 3) {
+      return '${difference.inSeconds} seconds ago';
+    } else {
+      return 'Just now';
+    }
+  }
+
+  bool showDate(DateTime prevDate) {
+    return (day - prevDate.day) > 0;
+  }
+
+  String dateRange() {
+    final difference = DateTime.now().day - day;
+    if (difference <= 0) {
+      return "Today";
+    } else if (difference == 1) {
+      return "Yesterday";
+    } else {
+      return date;
+    }
+  }
+
+  String timeRange() {
+    final difference = DateTime.now().day - day;
+    if (difference == 0) {
+      return time;
+    } else if (difference == 1) {
+      return "Yesterday";
+    } else {
+      return date;
+    }
+  }
 }
 
 extension StringExtensions on String {
@@ -128,7 +210,33 @@ extension StringExtensions on String {
   String get toPng => "assets/images/png/$this.png";
   String get toSvg => "assets/images/svg/$this.svg";
   DateTime get toDateTime => DateTime.fromMillisecondsSinceEpoch(toInt);
+  String? toValidNumber(String? dialCode) {
+    if (trim().length < 10 ||
+        (RegExp(r"[^0-9]").hasMatch(trim().firstChar!) &&
+            trim().firstChar != "+")) {
+      return null;
+    }
+    dialCode ??= "+1";
+    bool startsWithZero = trim().startsWith("0");
+    String refinedNumber = replaceAll(r"\D", "").replaceAll(" ", "").trim();
+    return "+${startsWithZero ? "$dialCode${refinedNumber.substring(1)}" : refinedNumber}";
+  }
+
   String lastChars(int n) => substring(length - n);
+  String? get lastChar => length > 0 ? this[length - 1] : null;
+  String? get firstChar => length > 0 ? this[0] : null;
+  String get toCapitalSpaceCase {
+    String output = "";
+    for (int i = 0; i < length; i++) {
+      final char = this[i];
+      final isUpperCase = RegExp(r"[A-Z]").hasMatch(char);
+      if (isUpperCase) {
+        output += " ";
+      }
+      output += (i == 0 ? char.toUpperCase() : char);
+    }
+    return output;
+  }
 
   String get capitalize {
     if (isEmpty) return "";
@@ -185,6 +293,37 @@ extension StringExtensions on String {
     int opacityHex = (opacity * 255).round();
     return '#${opacityHex.toRadixString(16).padLeft(2, '0')}${r.toRadixString(16).padLeft(2, '0')}${g.toRadixString(16).padLeft(2, '0')}${b.toRadixString(16).padLeft(2, '0')}';
   }
+
+  DateTime get datetime => DateTime.fromMillisecondsSinceEpoch(int.parse(this));
+  String get time => DateFormat.jm().format(datetime);
+  String get date => DateFormat.yMMMd().format(datetime);
+  String get dateandtime => "$date $time";
+  String get dateortime {
+    final now = DateTime.now();
+    //final date = datetime;
+    return (now.hour - datetime.hour) > 24 ? date : time;
+  }
+
+  String get toYesterdayOrTodayOrTime {
+    final now = DateTime.now();
+    return (now.hour - datetime.hour) >= 48
+        ? date
+        : (now.hour - datetime.hour) >= 24
+            ? "Yesterday"
+            : "Today";
+  }
+
+  List<String> get fromCommaSeperatedString => split(",");
+
+  int get toMilisecs => datetime.millisecondsSinceEpoch;
+  String dateString({String? seperator = " ", bool? monthInWords}) {
+    DateTime dt = datetime;
+    return dt.year.toString() +
+        seperator! +
+        dt.month.toString() +
+        seperator +
+        dt.day.toString();
+  }
 }
 
 extension DoubleExtensions on double {
@@ -200,6 +339,53 @@ extension IntExtenstions on int {
       DateFormat('hh:mm a').format(DateTime.fromMillisecondsSinceEpoch(this));
   String toCurrency(String currency) =>
       NumberFormat.currency(locale: 'en_US', symbol: currency).format(this);
+
+  String toDurationString([bool isTimer = true]) {
+    String duration = "";
+    final hours = this ~/ 3600;
+    final minutes = this % 3600 ~/ 60;
+    final seconds = this % 60;
+    if (this < 60) {
+      duration = isTimer ? "00:${seconds.toDigitsOf(2)}" : "$seconds";
+    } else if (this <= 600) {
+      duration =
+          "${minutes.toDigitsOf(isTimer ? 2 : 1)}:${seconds.toDigitsOf(2)}";
+    } else if (this > 600 && this < 3600) {
+      duration =
+          "${minutes.toDigitsOf(isTimer ? 2 : 1)}:${seconds.toDigitsOf(2)}";
+    } else {
+      duration = "$hours:${minutes.toDigitsOf(2)}:${seconds.toDigitsOf(2)}";
+    }
+    return duration;
+  }
+
+  String toDigitsOf(int value) {
+    String intString = "";
+    if (toString().length < value) {
+      int numberOfZerosToAdd = value - toString().length;
+      if (value > numberOfZerosToAdd) {
+        for (int i = 0; i < numberOfZerosToAdd; i++) {
+          intString += "0";
+        }
+      }
+      intString += "$this";
+      return intString;
+    } else {
+      return toString();
+    }
+  }
+}
+
+extension MapExtension<T, U> on Map<T, U> {
+  Map<T, U> removeNulls() {
+    Map<T, U> result = {};
+    for (var entry in entries) {
+      if (entry.value != null) {
+        result[entry.key] = entry.value;
+      }
+    }
+    return result;
+  }
 }
 
 extension DocsnapshotExtension<T> on DocumentSnapshot {
@@ -230,46 +416,71 @@ extension QueryExtension on Query {
   Query getQuery(List<dynamic>? where, List<dynamic>? order,
       List<dynamic>? start, List<dynamic>? end, List<dynamic>? limit) {
     Query query = this;
-    if (where != null) {
+    if (where != null &&
+        where.isNotEmpty &&
+        where[0] != null &&
+        where.length % 3 == 0) {
       int times = (where.length / 3).floor();
       for (int i = 0; i < times; i++) {
         final j = i * 3;
         String name = where[j + 0];
         String clause = where[j + 1];
         dynamic value = where[j + 2];
-        query = query.where(
-          name,
-          isEqualTo: clause == "==" ? value : null,
-          isNotEqualTo: clause == "!=" ? value : null,
-          isLessThan: clause == "<" ? value : null,
-          isGreaterThan: clause == ">" ? value : null,
-          isLessThanOrEqualTo: clause == "<=" ? value : null,
-          isGreaterThanOrEqualTo: clause == ">=" ? value : null,
-          whereIn: clause == "in" ? value : null,
-          whereNotIn: clause == "notin" ? value : null,
-          arrayContains: clause == "contains" ? value : null,
-          arrayContainsAny: clause == "containsany" ? value : null,
-          isNull: clause == "is" ? value : null,
-        );
+
+        //if (value != null) {
+        if (clause == "==") {
+          query = query.where(name, isEqualTo: value);
+        }
+        if (clause == "!=") {
+          query = query.where(name, isNotEqualTo: value);
+        }
+        if (clause == "<") {
+          query = query.where(name, isLessThan: value);
+        }
+        if (clause == ">") {
+          query = query.where(name, isGreaterThan: value);
+        }
+        if (clause == "<=") {
+          query = query.where(name, isLessThanOrEqualTo: value);
+        }
+        if (clause == ">=") {
+          query = query.where(name, isGreaterThanOrEqualTo: value);
+        }
+        if (clause == "in") {
+          query = query.where(name, whereIn: value);
+        }
+        if (clause == "notin") {
+          query = query.where(name, whereNotIn: value);
+        }
+        if (clause == "contains") {
+          query = query.where(name, arrayContains: value);
+        }
+        if (clause == "containsany") {
+          query = query.where(name, arrayContainsAny: value);
+        }
+        if (clause == "is") {
+          query = query.where(name, isNull: value);
+        }
+        //}
       }
     }
-    if (order != null) {
+    if (order != null && order.isNotEmpty && order[0] != null) {
       String orderName = order[0];
-      bool desc = order[1] ?? false;
+      bool desc = order.length == 1 ? false : order[1];
       query = query.orderBy(orderName, descending: desc);
     }
-    if (start != null) {
+    if (start != null && start.isNotEmpty && start[0] != null) {
       dynamic startName = start[0];
       bool after = start.length == 1 ? false : start[1];
       query =
           after ? query.startAfter([startName]) : query.startAt([startName]);
     }
-    if (end != null) {
+    if (end != null && end.isNotEmpty && end[0] != null) {
       dynamic endName = end[0];
       bool before = end.length == 1 ? false : end[1];
       query = before ? query.endBefore([endName]) : query.endAt([endName]);
     }
-    if (limit != null) {
+    if (limit != null && limit.isNotEmpty && limit[0] != null) {
       int limitCount = limit[0];
       bool last = limit.length == 1 ? false : limit[1];
       query = last ? query.limitToLast(limitCount) : query.limit(limitCount);

@@ -1,215 +1,78 @@
-// import 'package:flutter/material.dart';
-// import 'package:icons_plus/icons_plus.dart';
-// import 'package:watchball/utils/extensions.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:watchball/features/match/components/live_match_item.dart';
+import 'package:watchball/features/match/models/league_matches.dart';
+import 'package:watchball/shared/views/empty_list_view.dart';
+import 'package:watchball/utils/extensions.dart';
 
-// import '../../components/updates/date_tabbar.dart';
-// import '../../utils/colors.dart';
-// import '../../utils/utils.dart';
+import '../models/live_match.dart';
+import '../providers/search_matches_provider.dart';
 
-// class MatchesListScreen extends StatefulWidget {
-//   final String type;
-//   final DateTime dateTime;
-//   final void Function(DateTime dateTime) onChangeDateTime;
-//   final String listType;
-//   final void Function(String listType) onChangeListType;
-//   const MatchesListScreen(
-//       {super.key,
-//       required this.type,
-//       required this.dateTime,
-//       required this.onChangeDateTime,
-//       required this.listType,
-//       required this.onChangeListType});
+class MatchesListScreen extends ConsumerWidget {
+  final bool loading;
+  final List<LeagueMatches> leaguesMatches;
+  final void Function(LiveMatch match)? onSelect;
+  const MatchesListScreen(
+      {super.key,
+      required this.leaguesMatches,
+      this.loading = false,
+      this.onSelect});
 
-//   @override
-//   State<MatchesListScreen> createState() => _MatchesListScreenState();
-// }
-
-// class _MatchesListScreenState extends State<MatchesListScreen> {
-//   List<Competition> competitions = [];
-//   double initalOffset = 0;
-//   List<String> tabs = [];
-//   final _tabScrollController = ScrollController();
-//   int tabIndex = 0;
-//   late PageController _pageController;
-
-//   @override
-//   void initState() {
-//     // TODO: implement initState
-//     super.initState();
-//     competitions = allLeagues;
-//     _pageController = PageController(initialPage: 0);
-
-//     getDates();
-//   }
-
-//   @override
-//   void dispose() {
-//     _pageController.dispose();
-//     _tabScrollController.dispose();
-//     super.dispose();
-//   }
-
-//   void getDates() {
-//     final now = DateTime.now();
-//     final firstDayOfTheYear = DateTime(now.year, 1, 1);
-//     final firstDayOfTheNextYear = DateTime(now.year + 1, 1, 1);
-//     final days = firstDayOfTheNextYear.difference(firstDayOfTheYear).inDays;
-
-//     final todayDays = now.difference(DateTime(now.year, 1, 1)).inDays + 1;
-//     final remainingDays = days - todayDays;
-// // playedTabs = List.generate(todayDays,
-// //         (i) => getCalDate(firstDayOfTheYear.add(Duration(days: i - 1))));
-//     if (widget.type == "Live") {
-//       tabs = ["Live"];
-//     } else if (widget.type == "Played") {
-//       tabs = List.generate(todayDays, (i) {
-//         final date = now.subtract(
-//           Duration(days: i),
-//         );
-//         if (date.year == widget.dateTime.year &&
-//             date.month == widget.dateTime.month &&
-//             date.day == widget.dateTime.day) {
-//           tabIndex = i;
-//         }
-//         return getCalDate(date);
-//       });
-//     } else {
-//       tabs = List.generate(
-//         remainingDays,
-//         (i) {
-//           final date = firstDayOfTheYear.add(
-//             Duration(days: i + todayDays - 1),
-//           );
-//           if (date.year == widget.dateTime.year &&
-//               date.month == widget.dateTime.month &&
-//               date.day == widget.dateTime.day) {
-//             tabIndex = i;
-//           }
-//           return getCalDate(date);
-//         },
-//       );
-//     }
-//   }
-
-//   void scrollToCenter() {
-//     double position = (tabIndex * 100) - context.widthPercent(50, 100) + 50;
-//     double max = _tabScrollController.position.maxScrollExtent;
-//     _tabScrollController.jumpTo(position < 0
-//         ? 0
-//         : position > max
-//             ? max
-//             : position);
-//   }
-
-//   // void updateTabIndex(int index) {
-//   //   setState(() {
-//   //     tabIndex = index;
-//   //   });
-//   //   scrollToCenter();
-//   // }
-
-//   void updateTab(int index) {
-//     _pageController.jumpToPage(index);
-//   }
-
-//   void updatePage(int index) {
-//     setState(() {
-//       tabIndex = index;
-//     });
-//     scrollToCenter();
-//   }
-
-//   void pickDate() async {}
-//   void showFilters() {}
-
-//   @override
-//   Widget build(BuildContext context) {
-//     return DefaultTabController(
-//       length: tabs.length,
-//       child: Column(
-//         children: [
-//           Row(
-//             children: [
-//               SizedBox(
-//                 width: 50,
-//                 child: IconButton(
-//                   onPressed: pickDate,
-//                   icon: const Icon(EvaIcons.calendar_outline),
-//                 ),
-//               ),
-//               Expanded(
-//                 child: TabBar(
-//                   padding: EdgeInsets.zero,
-//                   isScrollable: true,
-//                   tabAlignment: TabAlignment.center,
-//                   dividerColor: transparent,
-//                   tabs: List.generate(
-//                     tabs.length,
-//                     (index) {
-//                       final tab = tabs[index];
-//                       return Tab(
-//                         text: tab,
-//                       );
-//                     },
-//                   ),
-//                 ),
-//                 // child: DateTabBar(
-//                 //   reverse: widget.type == "Played",
-//                 //   tabs: tabs,
-//                 //   scrollController: _tabScrollController,
-//                 //   selectedTab: tabIndex,
-//                 //   onTabChanged: updateTab,
-//                 // ),
-//               ),
-//               SizedBox(
-//                 width: 50,
-//                 child: IconButton(
-//                   onPressed: showFilters,
-//                   icon: const Icon(IonIcons.filter),
-//                 ),
-//               ),
-//             ],
-//           ),
-//           Expanded(
-//             child: Padding(
-//               padding: const EdgeInsets.symmetric(horizontal: 20),
-//               child: TabBarView(
-//                 children: List.generate(tabs.length, (index) {
-//                   return ListView.builder(
-//                     itemCount: competitions.length,
-//                     itemBuilder: (context, index) {
-//                       final competition = competitions[index];
-//                       return CompetitionMatchesItem(
-//                         competition: competition,
-//                         isWatch: widget.type == "Live",
-//                       );
-//                     },
-//                   );
-//                 }),
-//               ),
-//               // child: PageView.builder(
-//               //   reverse: widget.type == "Played",
-//               //   itemCount: tabs.length,
-//               //   itemBuilder: (context, index) {
-//               //     final tab = tabs[index];
-//               //     return ListView.builder(
-//               //       itemCount: competitions.length,
-//               //       itemBuilder: (context, index) {
-//               //         final competition = competitions[index];
-//               //         return CompetitionMatchesItem(
-//               //           competition: competition,
-//               //           isWatch: widget.type == "Live",
-//               //         );
-//               //       },
-//               //     );
-//               //   },
-//               //   controller: _pageController,
-//               //   onPageChanged: updatePage,
-//               // ),
-//             ),
-//           ),
-//         ],
-//       ),
-//     );
-//   }
-// }
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final searchText = ref.watch(searchMatchProvider);
+    if (loading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    if (leaguesMatches.isEmpty) {
+      return const EmptyListView(message: "No match");
+    }
+    return ListView.builder(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      itemCount: leaguesMatches.length,
+      itemBuilder: (context, index) {
+        final league = leaguesMatches[index];
+        final matches = league.matches
+            .where((match) =>
+                match.homeName.toLowerCase().contains(searchText) ||
+                match.awayName.toLowerCase().contains(searchText) ||
+                match.league.toLowerCase().contains(searchText))
+            .toList();
+        if (matches.isEmpty) return Container();
+        return Padding(
+          padding: const EdgeInsets.symmetric(vertical: 10),
+          child: Column(
+            // crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                league.league,
+                style: context.headlineSmall?.copyWith(fontSize: 18),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(
+                height: 10,
+              ),
+              ListView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: matches.length,
+                itemBuilder: (context, index) {
+                  final match = matches[index];
+                  return LiveMatchItem(
+                      match: match,
+                      onPressed: onSelect == null
+                          ? null
+                          : () {
+                              onSelect!(match);
+                              context.pop();
+                            });
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}

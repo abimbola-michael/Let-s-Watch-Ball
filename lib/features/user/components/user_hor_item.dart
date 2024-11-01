@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:icons_plus/icons_plus.dart';
 import 'package:watchball/shared/components/app_container.dart';
 import 'package:watchball/shared/components/button.dart';
+import 'package:watchball/shared/components/profile_photo.dart';
 import 'package:watchball/utils/extensions.dart';
 
 import '../models/user.dart';
@@ -9,8 +10,10 @@ import '../../../theme/colors.dart';
 
 class UserHorItem extends StatelessWidget {
   final User user;
+  final bool closable;
   final VoidCallback? onClose;
-  const UserHorItem({super.key, required this.user, this.onClose});
+  const UserHorItem(
+      {super.key, required this.user, this.onClose, this.closable = true});
 
   @override
   Widget build(BuildContext context) {
@@ -25,11 +28,8 @@ class UserHorItem extends StatelessWidget {
             height: 50,
             child: Stack(
               children: [
-                CircleAvatar(
-                  radius: 25,
-                  backgroundImage: AssetImage(user.photo.toJpg),
-                ),
-                if (onClose != null)
+                ProfilePhoto(profilePhoto: user.photo, name: user.username),
+                if (onClose != null && closable)
                   Positioned(
                     bottom: 0,
                     right: 0,
@@ -52,7 +52,7 @@ class UserHorItem extends StatelessWidget {
             height: 5,
           ),
           Text(
-            user.name,
+            user.username,
             style: context.bodyMedium?.copyWith(),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,

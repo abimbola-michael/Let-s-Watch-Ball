@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:icons_plus/icons_plus.dart';
@@ -35,8 +37,20 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
       if (result == null || result.user == null) return;
       if (result.additionalUserInfo?.isNewUser ?? false) {
         final user = result.user!;
-        await createUser(user.uid, user.email ?? "", user.displayName ?? "",
-            user.phoneNumber ?? "", user.photoURL ?? "");
+        String username =
+            user.displayName?.toLowerCase().replaceAll(" ", "_") ??
+                user.email?.substring(0, user.email!.indexOf("@")) ??
+                "";
+        while (await usernameExists(username)) {
+          username += Random().nextInt(10).toString();
+        }
+        await createUser(
+            user.uid,
+            user.email ?? "",
+            username,
+            user.displayName ?? "",
+            user.phoneNumber ?? "",
+            user.photoURL ?? "");
       }
       if (!mounted) return;
       context.pushNamedAndPop(MainScreen.route);
@@ -91,7 +105,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                         style: context.headlineMedium?.copyWith(color: white),
                         children: [
                           TextSpan(
-                            text: "Let's Watch Ball",
+                            text: "Watch Ball",
                             style: context.headlineMedium
                                 ?.copyWith(color: primaryColor),
                           ),
@@ -174,7 +188,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                       ),
                     ),
                     onPressed: () {
-                      context.pushNamedTo(SignupScreen.route);
+                      context.pushNamedAndPop(SignupScreen.route);
                     },
                   ),
                   const SizedBox(
@@ -197,15 +211,15 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                       AppTextButton(
                         text: "Login",
                         style: const TextStyle(
-                          color: white,
+                          color: primaryColor,
                           fontWeight: FontWeight.w400,
                           fontSize: 14,
-                          decoration: TextDecoration.underline,
-                          decorationColor: white,
+                          // decoration: TextDecoration.underline,
+                          // decorationColor: primaryColor,
                         ),
                         onPressed: () {
                           //context.pushNamedTo(MainScreen.route);
-                          context.pushNamedTo(LoginScreen.route);
+                          context.pushNamedAndPop(LoginScreen.route);
                         },
                       ),
                     ],

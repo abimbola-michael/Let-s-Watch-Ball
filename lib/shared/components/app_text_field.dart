@@ -41,6 +41,7 @@ class AppTextField extends StatefulWidget {
   final TextInputAction? inputAction;
   final bool isSearch;
   final bool removeBottomSpacing;
+  final bool isRequired;
 
   const AppTextField(
       {super.key,
@@ -75,7 +76,8 @@ class AppTextField extends StatefulWidget {
       this.onTap,
       this.hasError,
       this.focused,
-      this.isCard = false});
+      this.isCard = false,
+      this.isRequired = true});
 
   @override
   State<AppTextField> createState() => _AppTextFieldState();
@@ -93,7 +95,7 @@ class _AppTextFieldState extends State<AppTextField> {
   void initState() {
     super.initState();
     hintText = widget.titleText.isNotEmpty ? widget.titleText : widget.hintText;
-    obscureText = hintText.contains("Password");
+    obscureText = hintText.toLowerCase().contains("password");
     if (widget.focusNode != null) {
       _focusNode = widget.focusNode!;
     }
@@ -133,7 +135,7 @@ class _AppTextFieldState extends State<AppTextField> {
 
   String? validate(String? value) {
     if (value == null || value.isEmpty) {
-      return "$hintText is required";
+      return widget.isRequired ? "$hintText is required" : null;
     }
     if (hintText.contains("Email")) {
       if (!isValidEmail(value)) {
@@ -160,7 +162,7 @@ class _AppTextFieldState extends State<AppTextField> {
       }
     }
 
-    return null;
+    return widget.validator?.call(value);
   }
 
   @override

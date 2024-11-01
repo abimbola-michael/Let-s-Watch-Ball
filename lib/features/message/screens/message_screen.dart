@@ -24,7 +24,7 @@ import '../utils/message_utils.dart';
 
 class MessageScreen extends ConsumerStatefulWidget {
   static const route = "/message";
-
+  final String? userId;
   final String? receiverId;
   final String? match;
   final String? matchId;
@@ -32,6 +32,7 @@ class MessageScreen extends ConsumerStatefulWidget {
   final User? user;
   const MessageScreen({
     super.key,
+    this.userId,
     this.receiverId,
     this.match,
     this.matchId,
@@ -50,6 +51,7 @@ class _MessageScreenState extends ConsumerState<MessageScreen> {
   Message? replyMessage;
   User? user;
   //LiveMatch? match;
+  String userId = "";
   String receiverId = "";
   String match = "";
   String matchId = "";
@@ -62,11 +64,13 @@ class _MessageScreenState extends ConsumerState<MessageScreen> {
     // WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
     // });
 
-    isMatch = widget.isMatch ?? false;
     match = widget.match ?? "";
     matchId = widget.matchId ?? "";
+    userId = widget.userId ?? "";
     receiverId = widget.receiverId ?? "";
+    isMatch = widget.isMatch ?? matchId.isNotEmpty;
     user = widget.user;
+    getUserIdOrReceiverId();
     scrollToBottom();
   }
 
@@ -75,12 +79,15 @@ class _MessageScreenState extends ConsumerState<MessageScreen> {
     // TODO: implement didChangeDependencies
     super.didChangeDependencies();
     if (widget.match == null && context.args != null) {
-      isMatch = context.args["isMatch"] ?? false;
       match = context.args["match"] ?? "";
       matchId = context.args["matchId"] ?? "";
+      userId = context.args["userId"] ?? "";
       receiverId = context.args["receiverId"] ?? "";
+      isMatch = context.args["isMatch"] ?? matchId.isNotEmpty;
+
       // messages = context.args["messages"] ?? [];
       user = context.args["user"];
+      getUserIdOrReceiverId();
     }
   }
 
@@ -92,8 +99,17 @@ class _MessageScreenState extends ConsumerState<MessageScreen> {
     super.dispose();
   }
 
+  void getUserIdOrReceiverId() {
+    if (userId.isEmpty && receiverId.isNotEmpty) {
+      userId = getUserId(receiverId);
+    }
+    if (receiverId.isEmpty && userId.isNotEmpty) {
+      receiverId = getReceiverId(userId);
+    }
+  }
+
   Future getUserInfo() async {
-    user = await getUser(receiverId);
+    user = await getUser(userId);
     setState(() {});
   }
 

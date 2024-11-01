@@ -1,6 +1,7 @@
 // ignore_for_file: public_member_api_docs, sort_constructors_first
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
+
 import 'package:watchball/utils/extensions.dart';
 
 import '../../utils/utils.dart';
@@ -16,17 +17,21 @@ class AppAppBar extends StatelessWidget implements PreferredSizeWidget {
   final bool hideBackButton;
   final Color? color;
   final bool centered;
+  //final bool isSearch;
+  //final ValueChanged<String>? onTextChanged;
   const AppAppBar({
     super.key,
     this.title,
     this.subtitle,
     this.trailing,
+    this.middle,
+    this.leading,
     this.onBackPressed,
     this.hideBackButton = false,
-    this.leading,
-    this.middle,
     this.color,
     this.centered = true,
+    // this.isSearch = false,
+    // this.onTextChanged,
   });
 
   @override

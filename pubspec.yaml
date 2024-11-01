@@ -50,20 +50,24 @@ dependencies:
   firebase_messaging:
   firebase_storage:
   firebase_analytics:
-  #firebase_crashlytics:
+  firebase_crashlytics:
   cloud_firestore:
   google_sign_in:
-  video_player:
+  flutter_vlc_player:
+  dart_vlc:
+  #dart_vlc_ffi:
+  #video_player:
   #video_player_win:
+  #better_player: ^0.0.83
   encrypt:
   #flutter_stripe:
   fluttertoast:
-  awesome_notifications:
   cached_network_image:
-  #flutter_timezone_plus:
   timezone:
+  #platform_locale:
+  flutter_sim_country_code:
   #better_player_plus:
-  cached_chewie_plus:
+  #cached_chewie_plus:
   hive:
   hive_flutter:
   flutter_story_view:
@@ -73,6 +77,23 @@ dependencies:
   flutter_animate:
   #flutter_story_presenter
   #crop_image:
+  image_picker:
+  share_plus:
+  url_launcher:
+  clipboard:
+  country_code_picker_plus:
+  flutter_local_notifications:
+  #awesome_notifications:
+  device_info_plus:
+  geolocator:
+  geocoding:
+  phone_numbers_parser:
+  in_app_purchase:
+  google_mobile_ads:
+  flutter_dotenv:
+
+# dependency_overrides:
+#   meta: 1.11.0
 
 dev_dependencies:
   flutter_test:
@@ -97,6 +118,7 @@ flutter:
 
   # To add assets to your application, add an assets section, like this:
   assets:
+    - .env
     - assets/images/png/
     - assets/images/svg/
   # assets:

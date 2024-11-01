@@ -3,15 +3,15 @@
 import 'package:watchball/features/user/models/user.dart';
 
 final userOne = User(
-  id: "0",
-  name: "Abimbola Ezekiel",
-  email: "abimbolaezekiel@gmail.com",
-  phone: "07038916545",
-  bio: "My Goat is C.Ronaldo",
-  photo: "profile",
-  createdAt: DateTime.now().toString(),
-  modifiedAt: "",
-);
+    id: "0",
+    username: "ezekiel",
+    name: "Abimbola Ezekiel",
+    email: "abimbolaezekiel@gmail.com",
+    phone: "07038916545",
+    photo: "profile",
+    createdAt: DateTime.now().toString(),
+    modifiedAt: "",
+    token: "");
 
 // List<User> allContacts = [
 //   User(

@@ -2,629 +2,333 @@ import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:watchball/features/match/models/live_match.dart';
-import 'package:watchball/features/watch/models/watched_match.dart';
 import 'package:watchball/features/watch/models/watcher.dart';
 import 'package:watchball/firebase/firestore_methods.dart';
 import 'package:watchball/features/user/services/user_service.dart';
 import 'package:watchball/features/match/utils/match_utils.dart';
-
-import '../../notification/models/notif.dart';
+import 'package:watchball/utils/extensions.dart';
+import '../../../firebase/firebase_notification.dart';
 import '../../user/models/user.dart';
 import '../models/watch.dart';
-import '../models/watch_invite.dart';
-import '../models/watched.dart';
 import '../../../utils/utils.dart';
 
-final FirestoreMethods firestoreMethods = FirestoreMethods();
+final FirestoreMethods fm = FirestoreMethods();
 
-Future<Watch?> createWatch(LiveMatch match) async {
-  final watchId = firestoreMethods.getId(["watch"]);
-  final matchId = match.id;
+Future<List<Watcher>> readRequestedWatchers(String? lastTime) async {
+  return fm.getValues(
+      (map) => Watcher.fromMap(map), ["users", myId, "requested_watchers"],
+      where: lastTime != null ? ["time", ">", lastTime] : [], order: ["time"]);
+}
+
+Future<List<Watcher>> readMyWatchers(String? lastTime) async {
+  return fm.getValues(
+      (map) => Watcher.fromMap(map), ["users", myId, "watchers"],
+      where: lastTime != null ? ["time", ">", lastTime] : [], order: ["time"]);
+}
+
+Future<List<Watcher>> addMyWatcher(List<String> ids) async {
+  List<Watcher> watchers = [];
+  for (int i = 0; i < ids.length; i++) {
+    final id = ids[i];
+    final watcher = Watcher(id: id, time: timeNow);
+    await fm.setValue(["users", myId, "watchers", id],
+        value: watcher.toMap().removeNulls());
+    watchers.add(watcher);
+  }
+  return watchers;
+}
+
+Future removeMyWatcher(List<String> ids) async {
+  for (int i = 0; i < ids.length; i++) {
+    final id = ids[i];
+    await fm.removeValue(["users", myId, "watchers", id]);
+  }
+}
+
+Future addRequestedWatcher(List<String> phones) async {
+  for (int i = 0; i < phones.length; i++) {
+    final phone = phones[i];
+    final watcher = Watcher(id: phone, time: timeNow);
+    await fm.setValue(["users", myId, "requested_watchers", phone],
+        value: watcher.toMap().removeNulls());
+  }
+}
+
+Future removeRequestedWatcher(List<String> phones) async {
+  for (int i = 0; i < phones.length; i++) {
+    final phone = phones[i];
+    await fm.removeValue(["users", myId, "requested_watchers", phone]);
+  }
+}
+
+Future updateWatchsUsers(List<Watch> watchs) async {
+  for (int i = 0; i < watchs.length; i++) {
+    final watch = watchs[i];
+    await updateWatchUsers(watch);
+  }
+}
+
+Future updateWatchUsers(Watch watch) async {
+  if (watch.users.isEmpty) {
+    for (int i = 0; i < watch.watchersIds.length; i++) {
+      final watchersId = watch.watchersIds[i];
+      final user = await getUser(watchersId);
+      if (user != null) {
+        watch.users.add(user);
+      }
+    }
+  }
+  watch.creatorUser ??=
+      watch.users.where((element) => element.id == watch.creatorId).firstOrNull;
+}
+
+Future<List<Watch>> readWatchs(List<String> ids) async {
+  return fm.getValues((map) => Watch.fromMap(map), ["watchs"],
+      where: ["watchersIds", "contains", myId], order: ["modifiedAt"]);
+}
+
+Stream<List<ValueChange<Watch>>> readWatchsStream(List<String> ids) async* {
+  yield* fm.getValuesChangeStream((map) => Watch.fromMap(map), ["watchs"],
+      where: ["watchersIds", "containsany", ids], order: ["modifiedAt"]);
+  //, "creatorId", "!=", myId
+}
+
+Future<Watch?> createWatch(
+    LiveMatch match, List<User> users, String callMode) async {
+  final watchId = fm.getId(["watchs"]);
   //privacy options-nobody, invited, selected, anyone
-  //watch
-  //watcher
-  //watched
-  //final watched = Watched(id: myId, startTime: time, endTime: "");
 
+  if (users.indexWhere((element) => element.id == myId) == -1) {
+    final user = await getUser(myId);
+    if (user != null) {
+      users.insert(0, user);
+    }
+  }
+  final time = timeNow;
+// joinPrivacy: "invited",
+  // invitePrivacy: "everyone",
   final watch = Watch(
-    id: watchId,
-    match: match,
-    creatorId: myId,
-    joinPrivacy: "invited",
-    invitePrivacy: "everyone",
-    // startTime: time,
-    // endTime: "",
-    // watchers: [watcher],
-    // watcheds: [watched]
-  );
-
-  await firestoreMethods.setValue(["watch", watchId], value: watch.toMap());
-  final watcher = Watcher(id: myId, status: "current", time: timeNow);
-  watch.watchers.add(watcher);
-
-  await firestoreMethods
-      .setValue(["watch", watchId, "watchers", myId], value: watcher.toMap());
-
-  // await firestoreMethods
-  //     .setValue(["watch", watchId, "watchers", myId], value: watcher.toMap());
-
-  // final watchedTime = DateTime.now().millisecondsSinceEpoch.toString();
-  // await firestoreMethods
-  //     .setValue(["watch", watchId, "watched", myId], value: watched.toMap());
-
-  //user watch
-  await firestoreMethods
-      .updateValue(["users", myId], value: {"currentWatch": watch.id});
-  // watch.watchers.add(watcher);
-
-  //user watcheds
-  final watched = Watched(
-      watchId: watchId,
-      userId: myId,
-      watchedUserIds: myId,
-      matchId: matchId,
+      id: watchId,
+      matchId: match.id,
       match: getMatchString(match),
-      createdAt: timeNow,
-      endedAt: "");
-  await firestoreMethods
-      .setValue(["users", myId, "watcheds", watchId], value: watched.toMap());
-  // final result = await firestoreMethods
-  //     .getValue((map) => map, ["users", myId, "watcheds", matchId]);
-  // if (result == null) {
-  //   await firestoreMethods.setValue(
-  //     ["users", myId, "watcheds", matchId],
-  //     value: WatchedMatch(
-  //         matchId: matchId,
-  //         league: match.league,
-  //         date: match.date,
-  //         time: time,
-  //         homeName: match.homeName,
-  //         homeLogo: match.homeLogo,
-  //         awayName: match.awayName,
-  //         awayLogo: match.awayLogo,
-  //         watchIds: [watchId]).toMap(),
-  //   );
-  // } else {
-  //   await firestoreMethods.updateValue([
-  //     "users",
-  //     myId,
-  //     "watcheds",
-  //     matchId
-  //   ], value: {
-  //     "watchIds": FieldValue.arrayUnion([watchId])
-  //   });
-  // }
+      creatorId: myId,
+      callMode: callMode,
+      watchersIds: users.map((e) => e.id).toList(),
+      joinedWatchersIds: [myId],
+      createdAt: time,
+      modifiedAt: time,
+      records: []);
+
+  await fm.setValue(["watchs", watchId], value: watch.toMap());
+  await addWatchers(watch, users, [], callMode);
+
   return watch;
 }
 
-Future updateWatchJoinPrivacy(Watch watch, String privacy) async {
-  if (watch.joinPrivacy == privacy) return;
+void deleteWatch(Watch watch) {}
 
-  return firestoreMethods
-      .updateValue(["watch", watch.id], value: {"joinPrivacy": privacy});
-}
-
-Future updateWatchInvitePrivacy(Watch watch, String privacy) async {
-  if (watch.invitePrivacy == privacy) return;
-
-  return firestoreMethods
-      .updateValue(["watch", watch.id], value: {"invitePrivacy": privacy});
-}
-
-Future<List<Watch>> findWatchsToJoin(List<User> users) async {
-  List<Watch> watches = [];
-  // for (int i = 0; i < users.length; i++) {
-  //   final user = users[i];
-  //   //final watch = await getUserWatch(user.id);
-  //   final currentWatch = user.currentWatch;
-  //   if (currentWatch != null) {
-  //     final watch = await getWatch(currentWatch);
-  //     if (watch != null &&
-  //         watch.creatorId == user.id &&
-  //         watch.joinPrivacy != "invited") {
-  //       // final watchers = await getWatchers(watch.id);
-  //       // watch.watchers = watchers;
-  //       watches.add(watch);
-  //     }
-  //   }
-  // }
-  return watches;
-}
-
-//<List<Watcher>>
-Future<List<WatchInvite>> inviteWatchers(Watch watch, List<User> users) async {
-  List<WatchInvite> watchInvites = [];
+Future addWatchers(
+    Watch watch, List<User> users, List<String> watchersIds, String? callMode,
+    [bool isRequest = false]) async {
   final watchId = watch.id;
+  // final matchId = watch.matchId;
   // final match = watch.match;
-  //final time = DateTime.now().millisecondsSinceEpoch.toString();
-  final inviteUserIds = users.map((user) => user.id).toList();
-  //final matchName = "${watch.match.homeName} vs ${watch.match.awayName}";
-  final match = getMatchString(watch.match);
-  final watchInvite = WatchInvite(
-      matchId: watch.match.id,
-      watchId: watchId,
-      userId: myId,
-      invitedUserIds: inviteUserIds.join(","),
-      match: match,
-      createdAt: timeNow,
-      status: "request");
-  //watchInvites.add(watchInvite);
-  for (int i = 0; i < users.length; i++) {
-    final user = users[i];
-    final time = DateTime.now().millisecondsSinceEpoch.toString();
 
-    final watcher = Watcher(id: user.id, time: time, status: "invite");
-    await firestoreMethods.setValue(["watch", watchId, "watchers", user.id],
-        value: watcher.toMap());
-    // await firestoreMethods.updateValue([
-    //   "watch",
-    //   watchId
-    // ], value: {
-    //   "watchers": FieldValue.arrayUnion([watcher.toMap()])
-    // });
-    // await firestoreMethods.setValue(["watch", watchId, "watchers", user.id],
-    //     value: watcher.toMap());
-    // await firestoreMethods.updateValue([
-    //   "users",
-    //   user.id
-    // ], value: {
-    //   "invitedWatchs": FieldValue.arrayUnion([watchInvite.toMap()])
-    // });
+  List<String> newlyAddedWatchersIds = [];
 
-    await firestoreMethods.setValue(
-      [
-        "users",
-        user.id,
-        "invites",
-        watchId,
-      ],
-      value: watchInvite.toMap(),
-    );
+  final length = watchersIds.isNotEmpty ? watchersIds.length : users.length;
+  for (int i = 0; i < length; i++) {
+    String watcherId = "";
+    if (watchersIds.isNotEmpty) {
+      watcherId = watchersIds[i];
+    } else {
+      final user = users[i];
+      watcherId = user.id;
 
-    // String message =
-    //     "is inviting you${users.length == 1 ? "" : " and ${users.length - 1} others"} to watch the match between ${match.homeName} and ${match.awayName}";
-    // final notifId = firestoreMethods.getId(["users", user.id, "notifications"]);
-    // final notif = Notif(
-    //   notifId: notifId,
-    //   id: watchId,
-    //   userId: myId,
-    //   type: "invite",
-    //   message: message,
-    //   time: time,
-    //   seen: false,
-    // );
-    // await firestoreMethods.setValue(
-    //   ["users", user.id, "notifications", notifId],
-    //   value: notif.toMap(),
-    // );
+      if (user.id != myId) {
+        sendWatchNotification(user.token, watch);
+      }
+    }
+    final time = timeNow;
+
+    final watcher = Watcher(
+        id: watcherId,
+        status: isRequest
+            ? "request"
+            : watcherId == myId
+                ? "current"
+                : "invite",
+        action: "calling",
+        time: time,
+        callMode: watcherId == myId ? callMode : null,
+        match: watch.match);
+
+    if (users.isNotEmpty && watcher.user == null) {
+      watcher.user = users[i];
+    }
+    if (watchersIds.isNotEmpty && watcher.user == null) {
+      watcher.user = await getUser(watcherId);
+    }
+    watch.joinedWatchersIds.add(watcherId);
+    watch.watchers.add(watcher);
+
+    await fm.setValue(["watchs", watchId, "watchers", watcherId],
+        value: watcher.toMap().removeNulls());
+
+    if (!watch.watchersIds.contains(watcherId)) {
+      watch.watchersIds.add(watcherId);
+      newlyAddedWatchersIds.add(watcherId);
+    }
   }
-  // await firestoreMethods.setValue(
-  //   [
-  //     "users",
-  //     myId,
-  //     "invites",
-  //     watchId,
-  //   ],
-  //   value: watchInvite.toMap(),
-  // );
-  return watchInvites;
+  if (newlyAddedWatchersIds.isNotEmpty) {
+    await fm.updateValue(["watchs", watchId],
+        value: {"watchersIds": FieldValue.arrayUnion(newlyAddedWatchersIds)});
+  }
 }
 
-// Future removeWatchers(String watchId, List<User> users) async {
-//   for (int i = 0; i < users.length; i++) {
-//     final user = users[i];
-//     await firestoreMethods.removeValue(
-//       ["watch", watchId, "watchers", user.id],
-//     );
-//     await firestoreMethods
-//         .updateValue(["users", user.id], value: {"watch": null});
-//   }
+Future removeWatchers(
+    Watch watch, List<String> watchersIds, String userId) async {
+  final watchId = watch.id;
+
+  for (int i = 0; i < watchersIds.length; i++) {
+    final watcherId = watchersIds[i];
+
+    final watcherIndex =
+        watch.watchers.indexWhere((element) => element.id == watcherId);
+    if (watcherIndex != -1) {
+      final watcher = watch.watchers[watcherIndex];
+      watch.watchers.removeAt(watcherIndex);
+      //startedAt: watcher.time, endedAt: timeNow
+      final newWatch = watch.copyWith();
+      newWatch.status = watcher.status == "invite"
+          ? userId == myId
+              ? "rejected"
+              : "missed"
+          : watcher.status == "request"
+              ? userId == myId
+                  ? "canceled"
+                  : "declined"
+              : "accepted";
+      if (watcher.user != null && watcher.user!.id != myId) {
+        sendWatchNotification(watcher.user!.token, newWatch);
+      }
+
+      await fm.setValue(["users", watcherId, "watchs", watchId],
+          value: newWatch.toMap());
+    }
+    final currentWatchers =
+        watch.watchers.where((element) => element.status == "current");
+
+    if (currentWatchers.isEmpty) {
+      await fm.removeValue(["watchs", watchId]);
+    } else {
+      await fm.removeValue(["watchs", watchId, "watchers", watcherId]);
+    }
+  }
+}
+
+Future sendWatchNotification(String token, Watch watch) async {
+  return sendPushNotification(token,
+      notificationType: "watch", title: "Match", body: "", data: watch.toMap());
+}
+
+// Future updateWatchJoinPrivacy(Watch watch, String privacy) async {
+//   if (watch.joinPrivacy == privacy) return;
+
+//   return fm.updateValue(["watchs", watch.id], value: {"joinPrivacy": privacy});
+// }
+
+// Future updateWatchPrivacy(Watch watch, String privacy) async {
+//   if (watch.invitePrivacy == privacy) return;
+
+//   return fm
+//       .updateValue(["watchs", watch.id], value: {"invitePrivacy": privacy});
 // }
 
 Future requestToJoinWatch(Watch watch) async {
-  String watchId = watch.id;
-  // final watchers = watch.watchers;
-  // final match = watch.match;
-  // final time = DateTime.now().millisecondsSinceEpoch.toString();
-
-  final watcher = Watcher(id: myId, time: timeNow, status: "request");
-
-  await firestoreMethods
-      .setValue(["watch", watchId, "watchers", myId], value: watcher.toMap());
-  // await firestoreMethods.updateValue([
-  //   "watch",
-  //   watchId
-  // ], value: {
-  //   "watchers": FieldValue.arrayUnion([watcher.toMap()])
-  // });
-  // await firestoreMethods
-  //     .setValue(["watch", watchId, "watchers", myId], value: watcher.toMap());
-  // await firestoreMethods
-  //     .updateValue(["users", myId], value: {"requestedWatch": watch.id});
+  return addWatchers(watch, [], [myId], watch.callMode, true);
 }
 
-//Watch? currentWatch,
-Future acceptOrJoinWatch(Watch watch, String? userId) async {
-  final watchId = watch.id;
+Future acceptOrJoinWatch(Watch watch, String? userId, String callMode) async {
+  userId ??= myId;
+  return addWatchers(watch, [], [userId], callMode);
+}
+
+Future rejectOrLeaveWatch(Watch watch, [String? userId]) async {
   userId ??= myId;
 
-  final match = watch.match;
-  final matchId = match.id;
-
-  List<Watcher> currentWatchers = [];
-  List<Watcher> currentAndLeftWatchers = [];
-
-  String status = "";
-
-  for (int i = 0; i < watch.watchers.length; i++) {
-    final watcher = watch.watchers[i];
-    if (watcher.id == userId) {
-      status = watcher.status;
-    }
-
-    if (watcher.status == "current") {
-      currentWatchers.add(watcher);
-    }
-    if (watcher.status == "current" || watcher.status == "left") {
-      currentAndLeftWatchers.add(watcher);
-    }
-  }
-  // if (userId != myId && currentWatch == null) {
-  //   final currentUser = await firestoreMethods
-  //       .getValue((map) => User.fromMap(map), ["users", userId]);
-  //   final watchId = currentUser?.currentWatch;
-  //   if (watchId != null) {
-  //     currentWatch = await getWatch(watchId);
-  //   }
-  // }
-
-  // if (currentWatch != null) {
-  //   await rejectOrLeaveWatch(currentWatch, isRequest, userId: userId);
-  // }
-
-  //final time = DateTime.now().millisecondsSinceEpoch.toString();
-
-  //watcher
-  // final prevWatcher =
-  //     watch.watchers.firstWhere((watcher) => watcher.id == userId);
-
-  bool isRequest = status.isEmpty || status == "request";
-  if (status == "invite") {
-    await firestoreMethods.updateValue(["users", userId, "invites", watchId],
-        value: {"status": "accept"});
-  }
-
-  final watcher = Watcher(id: userId, time: timeNow, status: "current");
-  await firestoreMethods
-      .setValue(["watch", watchId, "watchers", userId], value: watcher.toMap());
-
-  if (!isRequest) {
-    await firestoreMethods
-        .updateValue(["users", userId], value: {"currentWatch": watchId});
-  }
-
-  final watched = Watched(
-    watchId: watchId,
-    userId: userId,
-    watchedUserIds: currentAndLeftWatchers
-        .map((watcher) => watcher.id)
-        .join(",")
-        .toString(),
-    matchId: matchId,
-    match: getMatchString(match),
-    createdAt: timeNow,
-    endedAt: "",
-  );
-
-  await firestoreMethods
-      .setValue(["users", myId, "watcheds", watchId], value: watched.toMap());
-
-  // final result = await firestoreMethods
-  //     .getValue((map) => map, ["users", myId, "watcheds", matchId]);
-  // if (result == null) {
-  //   await firestoreMethods.setValue(
-  //     ["users", myId, "watcheds", matchId],
-  //     value: WatchedMatch(
-  //         matchId: matchId,
-  //         league: match.league,
-  //         date: match.date,
-  //         time: time,
-  //         homeName: match.homeName,
-  //         homeLogo: match.homeLogo,
-  //         awayName: match.awayName,
-  //         awayLogo: match.awayLogo,
-  //         watchIds: [watchId]).toMap(),
-  //   );
-  // } else {
-  //   await firestoreMethods.updateValue([
-  //     "users",
-  //     myId,
-  //     "watcheds",
-  //     matchId
-  //   ], value: {
-  //     "watchIds": FieldValue.arrayUnion([watchId])
-  //   });
-  // }
+  return removeWatchers(watch, [userId], myId);
 }
 
-Future rejectOrLeaveWatch(Watch watch, String? userId) async {
-  final watchId = watch.id;
-  userId ??= myId;
-
-  //watcher
-  // Watcher? prevWatcher;
-  //Watched? prevWatched;
-
-  List<Watcher> currentWatchers = [];
-  List<Watcher> invitedWatchers = [];
-  List<Watcher> requestedWatchers = [];
-  List<Watcher> currentAndLeftWatchers = [];
-
-  String status = "";
-
-  for (int i = 0; i < watch.watchers.length; i++) {
-    final watcher = watch.watchers[i];
-    if (watcher.id == userId) {
-      status = watcher.status;
-    }
-
-    if (watcher.status == "current") {
-      currentWatchers.add(watcher);
-      currentAndLeftWatchers.add(watcher);
-      if (watcher.id == userId) {
-        removeSignal(watchId, userId);
-        //prevWatcher = watcher;
-      }
-    } else if (watcher.status == "left") {
-      currentAndLeftWatchers.add(watcher);
-    } else if (watcher.status == "invite") {
-      invitedWatchers.add(watcher);
-    } else {
-      requestedWatchers.add(watcher);
-    }
-  }
-  // for (int i = 0; i < watch.watcheds.length; i++) {
-  //   final watched = watch.watcheds[i];
-  //   if (watched.id == userId) {
-  //     prevWatched = watched;
-  //   }
-  // }
-
-  // if (prevWatcher != null) {
-  //   await firestoreMethods.updateValue([
-  //     "watch",
-  //     watchId
-  //   ], value: {
-  //     "watchers": FieldValue.arrayRemove([prevWatcher.toMap()]),
-  //   });
-  // }
-  bool isRequest = status.isEmpty || status == "request";
-
-  if (status == "invite") {
-    await firestoreMethods.updateValue(["users", userId, "invites", watchId],
-        value: {"status": userId == myId ? "reject" : "cancel"});
-  }
-
-  if (status == "current") {
-    await firestoreMethods.updateValue([
-      "users",
-      myId,
-      "watcheds",
-      watchId
-    ], value: {
-      "endedAt": timeNow,
-      "watchedUserIds": currentAndLeftWatchers
-          .map((watcher) => watcher.id)
-          .join(",")
-          .toString()
-    });
-    // if (currentWatchers.length == 1) {
-    //   await firestoreMethods.removeValue(["watch", watchId]);
-    // }
-    await firestoreMethods.updateValue(["watch", watchId, "watchers", userId],
-        value: {"status": "left", "time": timeNow});
-  } else {
-    await firestoreMethods.removeValue(
-      ["watch", watchId, "watchers", userId],
-    );
-  }
-  if (userId == myId) {
-    if (watch.creatorId == userId) {
-      await firestoreMethods
-          .updateValue(["users", userId], value: {"currentWatch": null});
-    } else {
-      //await createWatch(watch.match);
-    }
-  }
-
-  // bool isCurrent = prevWatcher.status == "current";
-  // final watcherIndex =
-  //     watch.watchers.indexWhere((watcher) => watcher.id == userId);
-  // if (watcherIndex != -1 && watch.watchers[watcherIndex].status == "current") {
-  //   isCurrent = true;
-  // }
-  // final currentWatchers =
-  //     watch.watchers.where((watcher) => watcher.status == "current");
-
-  // if (prevWatched != null) {
-  //   final endTime = DateTime.now().millisecondsSinceEpoch.toString();
-
-  //   await firestoreMethods.updateValue([
-  //     "watch",
-  //     watchId
-  //   ], value: {
-  //     "watcheds": FieldValue.arrayRemove([prevWatched.toMap()]),
-  //   });
-
-  //   await firestoreMethods.updateValue([
-  //     "watch",
-  //     watchId
-  //   ], value: {
-  //     "watcheds": FieldValue.arrayUnion(
-  //         [prevWatched.copyWith(endTime: endTime).toMap()]),
-  //   });
-
-  // await firestoreMethods.updateValue(["watch", watchId, "watched", myId],
-  //     value: {"endTime": endTime});
-  // await removeSignal(watchId, userId);
-  //}
-  // if (currentWatchers.length <= 1) {
-  //   final endTime = DateTime.now().millisecondsSinceEpoch.toString();
-
-  //   await firestoreMethods
-  //       .updateValue(["watch", watchId], value: {"endTime": endTime});
-  // }
-  // if (watchInvite == null && userId != myId) {
-  //   final user = await firestoreMethods
-  //       .getValue((map) => User.fromMap(map), ["users", userId]);
-  //   if (user?.invitedWatchs != null) {
-  //     final inviteIndex = user!.invitedWatchs!
-  //         .indexWhere((invite) => invite.watchId == watchId);
-  //     if (inviteIndex != -1) {
-  //       watchInvite = user.invitedWatchs![inviteIndex];
-  //     }
-  //   }
-  // }
-
-  // if (watchInvite == null) {
-  //   await firestoreMethods
-  //       .updateValue(["users", userId], value: {"requestedWatch": null});
-  // } else {
-  //   await firestoreMethods.updateValue([
-  //     "users",
-  //     userId
-  //   ], value: {
-  //     "invitedWatchs": FieldValue.arrayRemove([watchInvite])
-  //   });
-  // }
-
-  // if (watchInvite == null) {
-  //   await firestoreMethods
-  //       .updateValue(["users", userId], value: {"requestedWatch": null});
-  // } else {
-  //   await firestoreMethods.updateValue([
-  //     "users",
-  //     userId
-  //   ], value: {
-  //     "invitedWatchs": FieldValue.arrayRemove([watchInvite.toMap()])
-  //   });
-  // }
-  if (currentWatchers.length <= 1) {
-    for (int i = 0; i < invitedWatchers.length; i++) {
-      final watcher = invitedWatchers[i];
-      await firestoreMethods.updateValue(
-          ["users", watcher.id, "invites", watchId],
-          value: {"status": "cancel"});
-    }
-    await firestoreMethods.removeValue(["watch", watchId]);
-    // await firestoreMethods
-    //     .updateValue(["watch", watchId], value: {"watchers": []});
-  } else {}
+Future<Watcher?> getWatcher(String watchId, String userId) async {
+  return fm.getValue(
+      (map) => Watcher.fromMap(map), ["watchs", watchId, "watchers", userId]);
 }
-
-Future removeSignal(String watchId, String userId) {
-  return firestoreMethods.removeValue(
-    ["watch", watchId, "signal", userId],
-  );
-}
-
-Future updateSignal(String watchId, String userId, Map<String, dynamic> value) {
-  return firestoreMethods
-      .updateValue(["watch", watchId, "signal", userId], value: value);
-}
-
-Future addSignal(String watchId, String userId, Map<String, dynamic> value) {
-  return firestoreMethods.setValue(["watch", watchId, "signal", userId],
-      value: value, merge: true);
-}
-
-Stream<List<ValueChange<Map<String, dynamic>>>> streamChangeSignals(
-    String watchId) async* {
-  yield* firestoreMethods
-      .getValuesChangeStream((map) => map, ["watch", watchId, "signal"]);
-}
-
-Future removeUserWatch() async {
-  await firestoreMethods.updateValue(["users", myId], value: {"watch": null});
-}
-
-Future<List<WatchInvite>> readWatchInvites(String watchId) async {
-  return firestoreMethods
-      .getValues((map) => WatchInvite.fromMap(map), ["users", myId, "invites"]);
-}
-
-// Future<List<Watched>> readWatcheds(String watchId) async {
-//   return firestoreMethods
-//       .getValues((map) => Watched.fromMap(map), ["users", watchId, "watcheds"]);
-// }
 
 Stream<Watcher?> streamWatcher(String watchId, String userId) async* {
-  yield* firestoreMethods.getValueStream(
-      (map) => Watcher.fromMap(map), ["watch", watchId, "watchers", userId]);
+  yield* fm.getValueStream(
+      (map) => Watcher.fromMap(map), ["watchs", watchId, "watchers", userId]);
 }
 
 Future<List<Watcher>> readWatchers(String watchId) async {
-  return firestoreMethods
-      .getValues((map) => Watcher.fromMap(map), ["watch", watchId, "watchers"]);
+  return fm.getValues(
+      (map) => Watcher.fromMap(map), ["watchs", watchId, "watchers"]);
 }
 
 Stream<List<Watcher>> streamWatchers(String watchId) async* {
-  yield* firestoreMethods.getValuesStream(
-      (map) => Watcher.fromMap(map), ["watch", watchId, "watchers"]);
+  yield* fm.getValuesStream(
+      (map) => Watcher.fromMap(map), ["watchs", watchId, "watchers"]);
 }
 
 Stream<List<ValueChange<Watcher>>> streamChangeWatchers(String watchId) async* {
-  yield* firestoreMethods.getValuesChangeStream(
-      (map) => Watcher.fromMap(map), ["watch", watchId, "watchers"],
-      order: ["time"]);
+  yield* fm.getValuesChangeStream(
+      (map) => Watcher.fromMap(map), ["watchs", watchId, "watchers"],
+      order: ["time"], where: ["id", "!=", myId]);
 }
 
-Stream<List<WatchedMatch>> streamWatchedMatch() async* {
-  yield* firestoreMethods.getValuesStream(
-      (map) => WatchedMatch.fromMap(map), ["users", myId, "watcheds"]);
-}
+// Stream<List<WatchedMatch>> streamWatchedMatch() async* {
+//   yield* fm.getValuesStream(
+//       (map) => WatchedMatch.fromMap(map), ["users", myId, "watch_history"]);
+// }
 
-Future<List<Watched>> readWatcheds(String? lastTime) async {
-  return firestoreMethods.getValues(
-      (map) => Watched.fromMap(map), ["users", myId, "watcheds"],
-      order: ["createdAt"],
-      where: lastTime == null ? null : ["createdAt", ">", lastTime]);
-}
+// Future<List<Watched>> readWatcheds(String? lastTime) async {
+//   return fm.getValues(
+//       (map) => Watched.fromMap(map), ["users", myId, "watch_history"],
+//       order: ["createdAt"],
+//       where: lastTime == null ? null : ["createdAt", ">", lastTime]);
+// }
 
-Stream<List<ValueChange<Watcher>>> streamChangeWatchInvites(
+Stream<List<ValueChange<Watcher>>> streamChangeWatchWatchs(
     String? lastTime) async* {
-  yield* firestoreMethods.getValuesChangeStream(
-      (map) => Watcher.fromMap(map), ["users", myId, "invites"],
+  yield* fm.getValuesChangeStream(
+      (map) => Watcher.fromMap(map), ["users", myId, "watchs"],
       order: ["createdAt"],
       where: lastTime == null ? null : ["createdAt", ">", lastTime]);
 }
 
-Future<Watch?> getUserWatch(String userId) async {
-  final user = await firestoreMethods
-      .getValue((map) => User.fromMap(map), ["users", userId]);
-  if (user?.currentWatch != null) {
-    return getWatch(user!.currentWatch!);
-  } else {
-    return null;
-  }
-}
+// Future<Watch?> getUserWatch(String userId) async {
+//   final user = await fm.getValue((map) => User.fromMap(map), ["users", userId]);
+//   if (user?.currentWatch != null) {
+//     return getWatch(user!.currentWatch!);
+//   } else {
+//     return null;
+//   }
+// }
 
 Stream<Watch?> streamWatch(String watchId) async* {
-  yield* firestoreMethods
-      .getValueStream((map) => Watch.fromMap(map), ["watch", watchId]);
+  yield* fm.getValueStream((map) => Watch.fromMap(map), ["watchs", watchId]);
 }
 
 Future<Watch?> getWatch(String watchId) async {
-  return firestoreMethods
-      .getValue((map) => Watch.fromMap(map), ["watch", watchId]);
+  return fm.getValue((map) => Watch.fromMap(map), ["watchs", watchId]);
 }
 
 Future updateWatch(String watchId, Map<String, dynamic> value) async {
-  return firestoreMethods.updateValue(["watch", watchId], value: value);
+  return fm.updateValue(["watchs", watchId], value: value);
 }
 
 Future removeWatch(String watchId) async {
-  return firestoreMethods.removeValue(["watch", watchId]);
+  return fm.removeValue(["watchs", watchId]);
 }
 
 Future<User?> addWatcherUser(List<Watcher> watchers, String creatorId) async {
@@ -642,4 +346,98 @@ Future<User?> addWatcherUser(List<Watcher> watchers, String creatorId) async {
     creatorUser = user;
   }
   return creatorUser;
+}
+
+Future startCall(String watchId, String callMode) {
+  return fm.updateValue([
+    "watchs",
+    watchId,
+    "watchers",
+    myId
+  ], value: {
+    "callMode": callMode,
+    "isAudioOn": true,
+    "isFrontCamera": true,
+    "isOnHold": true,
+    // "id": myId,
+  });
+}
+
+Future endCall(String watchId) {
+  return fm.updateValue([
+    "watchs",
+    watchId,
+    "watchers",
+    myId
+  ], value: {
+    "callMode": null,
+    "isAudioOn": null,
+    "isFrontCamera": null,
+    "isOnHold": null
+  });
+}
+
+Future updateCallMode(String watchId, String? callMode) {
+  return fm.updateValue(["watchs", watchId, "watchers", myId],
+      value: {"callMode": callMode});
+}
+
+Future updateWatchSync(String watchId, String? userId) {
+  return fm.updateValue(["watchs", watchId, "watchers", myId],
+      value: {"syncUserId": userId});
+}
+
+Future updateWatchPosition(String watchId, int? watchPosition) {
+  return fm.updateValue(["watchs", watchId, "watchers", myId],
+      value: {"watchPosition": watchPosition});
+}
+
+Future updateWatchAction(String watchId, String action) {
+  return fm.updateValue(["watchs", watchId, "watchers", myId],
+      value: {"action": action});
+}
+
+Future updateWatchMatch(String watchId, String match) {
+  return fm.updateValue(["watchs", watchId, "watchers", myId],
+      value: {"match": match});
+}
+
+Future updateCallAudio(String watchId, bool isAudioOn) {
+  return fm.updateValue(["watchs", watchId, "watchers", myId],
+      value: {"isAudioOn": isAudioOn});
+}
+
+Future updateCallHold(String watchId, bool isOnHold) {
+  return fm.updateValue(["watchs", watchId, "watchers", myId],
+      value: {"isOnHold": isOnHold});
+}
+
+Future updateCallCamera(String watchId, bool isFrontCamera) {
+  return fm.updateValue(["watchs", watchId, "watchers", myId],
+      value: {"isFrontCamera": isFrontCamera});
+}
+
+Stream<List<ValueChange<Map<String, dynamic>>>> streamChangeSignals(
+    String watchId) async* {
+  yield* fm.getValuesChangeStream(
+      (map) => map, ["watchs", watchId, "watchers", myId, "signal"]);
+}
+
+Future addSignal(
+    String watchId, String userId, Map<String, dynamic> value) async {
+  return fm.setValue(["watchs", watchId, "watchers", userId, "signal", myId],
+      value: {...value, "id": myId});
+}
+
+Future removeSignal(String watchId, String userId) {
+  return fm.removeValue(["watchs", watchId, "watchers", userId, "signal"]);
+}
+
+Future<List<Watch>> readWatchHistory(
+    {String? lastTime, String? firstTime, int? limit, bool dsc = false}) {
+  return fm.getValues((map) => Watch.fromMap(map), ["users", myId, "watchs"],
+      start: lastTime == null ? [] : [lastTime, true],
+      end: firstTime == null ? [] : [firstTime, true],
+      order: ["modifiedAt", dsc],
+      limit: limit == null ? [] : [limit, firstTime != null]);
 }

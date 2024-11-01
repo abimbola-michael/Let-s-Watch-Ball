@@ -74,16 +74,20 @@ class AuthMethods {
   Future<bool> comfirmPassword(String password) async {
     final user = auth.currentUser;
     if (user == null) return false;
-    final credential =
-        EmailAuthProvider.credential(email: user.email!, password: password);
-    final credentialresult =
-        await user.reauthenticateWithCredential(credential);
-    return credentialresult.user != null;
+    try {
+      final credential =
+          EmailAuthProvider.credential(email: user.email!, password: password);
+      final credentialresult =
+          await user.reauthenticateWithCredential(credential);
+      return credentialresult.user != null;
+    } catch (e) {
+      return false;
+    }
   }
 
   Future<void> updateEmail(String email) async {
     final user = auth.currentUser;
-    return user?.updateEmail(email);
+    return user?.verifyBeforeUpdateEmail(email);
   }
 
   Future<void> updatePassword(String password) async {

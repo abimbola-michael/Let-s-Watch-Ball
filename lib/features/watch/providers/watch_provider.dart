@@ -4,6 +4,7 @@ import '../models/watch.dart';
 
 class WatchNotifier extends StateNotifier<Watch?> {
   WatchNotifier(super.state);
+
   void updateWatch(Watch? watch) {
     state = watch;
   }
