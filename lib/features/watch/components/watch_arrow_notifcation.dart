@@ -20,7 +20,7 @@ class WatchArrowNotification extends StatelessWidget {
         watch.creatorId == myId
             ? EvaIcons.arrow_forward_outline
             : EvaIcons.arrow_back_outline,
-        size: 10,
+        size: 20,
         color: watch.status == "missed" ? Colors.red : primaryColor,
       ),
     );

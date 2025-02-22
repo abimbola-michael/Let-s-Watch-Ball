@@ -45,7 +45,7 @@ class _SignupScreenState extends State<SignupScreen> {
   bool acceptTerms = false;
   bool canGoogleSignIn = kIsWeb || !Platform.isWindows;
 
-  bool loading = false;
+   loading = false;
   String countryDialCode = "";
   @override
   void initState() {
@@ -64,11 +64,13 @@ class _SignupScreenState extends State<SignupScreen> {
   }
 
   void getCountryCode() async {
-    final code = await getSimCountryCode();
-    if (code != null) {
-      countryCode = code;
-      countryDialCode = code;
-    }
+    //final code = await getSimCountryCode();
+    final code = await getCurrentCountryCode();
+    await getCurrentCountryDialingCode();
+
+    // if (code != null) {
+    //   countryCode = code;
+    // }
     setState(() {});
   }
 
@@ -161,181 +163,165 @@ class _SignupScreenState extends State<SignupScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Stack(
-        children: [
-          // Positioned(
-          //   top: statusBarHeight + 20,
-          //  // right: 5,
-          //   child: const Opacity(
-          //     opacity: 0.1,
-          //     child: Logo(),
-          //     // child: SvgAsset(
-          //     //   name: "kari_logo",
-          //     //   height: 100,
-          //     //   width: 196,
-          //     // ),
-          //   ),
-          // ),
-          SingleChildScrollView(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20.0),
-              child: Form(
-                key: formKey,
-                child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      SizedBox(
-                        height: statusBarHeight + 100,
-                      ),
-                      Text("Sign Up",
-                          style: context.headlineLarge?.copyWith(fontSize: 36)),
-                      const SizedBox(height: 30),
-                      // Row(
-                      //   crossAxisAlignment: CrossAxisAlignment.start,
-                      //   children: [
-                      //     Expanded(
-                      //       child: AppTextField(
-                      //         hintText: "Name",
-                      //         controller: _nameController,
-                      //       ),
-                      //     ),
-                      //     const SizedBox(width: 10),
-                      //     Expanded(
-                      //       child: AppTextField(
-                      //         hintText: "Phone number",
-                      //         controller: _phoneNumberController,
-                      //       ),
-                      //     ),
-                      //   ],
-                      // ),
-                      AppTextField(
-                        hintText: "Username",
-                        controller: _usernameController,
-                        validator: (value) {
-                          if (usernameExist) {
-                            return "Username already exist";
-                          }
-                          return null;
-                        },
-                      ),
-                      AppTextField(
-                        hintText: "Name",
-                        controller: _nameController,
-                      ),
-                      AppTextField(
-                        hintText: "Phone number",
-                        controller: _phoneNumberController,
-                        validator: (value) {
-                          if (value!.startsWith("+")) {
-                            return "Select Country dial code and just input the rest of your number";
-                          }
-                          return null;
-                        },
-                        prefix: SizedBox(
-                          width: 50,
-                          child: CountryCodePicker(
-                            textStyle:
-                                context.bodyMedium?.copyWith(color: tint),
-                            padding: const EdgeInsets.only(left: 10),
-                            mode: CountryCodePickerMode.bottomSheet,
-                            initialSelection:
-                                countryCode.isNotEmpty ? countryCode : "US",
-                            showFlag: false,
-                            showDropDownButton: false,
-                            dialogBackgroundColor: bgTint,
-                            onChanged: (country) {
-                              setState(() {
-                                countryDialCode = country.dialCode;
-                              });
-                            },
-                          ),
+      body: LoadingOverlay(
+        loading: loading,
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20.0),
+            child: Form(
+              key: formKey,
+              child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    SizedBox(
+                      height: statusBarHeight + 100,
+                    ),
+                    Text("Sign Up",
+                        style: context.headlineLarge?.copyWith(fontSize: 36)),
+                    const SizedBox(height: 30),
+                    // Row(
+                    //   crossAxisAlignment: CrossAxisAlignment.start,
+                    //   children: [
+                    //     Expanded(
+                    //       child: AppTextField(
+                    //         hintText: "Name",
+                    //         controller: _nameController,
+                    //       ),
+                    //     ),
+                    //     const SizedBox(width: 10),
+                    //     Expanded(
+                    //       child: AppTextField(
+                    //         hintText: "Phone number",
+                    //         controller: _phoneNumberController,
+                    //       ),
+                    //     ),
+                    //   ],
+                    // ),
+                    AppTextField(
+                      hintText: "Username",
+                      controller: _usernameController,
+                      validator: (value) {
+                        if (usernameExist) {
+                          return "Username already exist";
+                        }
+                        return null;
+                      },
+                    ),
+                    AppTextField(
+                      hintText: "Name",
+                      controller: _nameController,
+                    ),
+                    AppTextField(
+                      hintText: "Phone number",
+                      controller: _phoneNumberController,
+                      validator: (value) {
+                        if (value!.startsWith("+")) {
+                          return "Select Country dial code and just input the rest of your number";
+                        }
+                        return null;
+                      },
+                      prefix: SizedBox(
+                        width: 50,
+                        child: CountryCodePicker(
+                          textStyle: context.bodyMedium?.copyWith(color: tint),
+                          padding: const EdgeInsets.only(left: 10),
+                          mode: CountryCodePickerMode.bottomSheet,
+                          initialSelection:
+                              countryCode.isNotEmpty ? countryCode : "US",
+                          showFlag: false,
+                          showDropDownButton: false,
+                          dialogBackgroundColor: bgTint,
+                          onChanged: (country) {
+                            setState(() {
+                              countryDialCode = country.dialCode;
+                            });
+                          },
                         ),
                       ),
-                      AppTextField(
-                        hintText: "Email",
-                        controller: _emailController,
-                      ),
-                      AppTextField(
-                        hintText: "Password",
-                        controller: _passwordController,
-                      ),
-                      AppButton(
-                        width: double.infinity,
-                        title: "Sign Up",
-                        onPressed: signUp,
-                      ),
-                      const SizedBox(height: 20),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(
-                            "Already have an account?",
-                            style: TextStyle(
-                              color: lightTint,
-                              fontWeight: FontWeight.w400,
-                              fontSize: 14,
-                            ),
+                    ),
+                    AppTextField(
+                      hintText: "Email",
+                      controller: _emailController,
+                    ),
+                    AppTextField(
+                      hintText: "Password",
+                      controller: _passwordController,
+                    ),
+                    AppButton(
+                      width: double.infinity,
+                      title: "Sign Up",
+                      onPressed: signUp,
+                    ),
+                    const SizedBox(height: 20),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          "Already have an account?",
+                          style: TextStyle(
+                            color: lightTint,
+                            fontWeight: FontWeight.w400,
+                            fontSize: 14,
                           ),
-                          const SizedBox(width: 4),
-                          AppTextButton(
-                            text: "Login",
-                            style: const TextStyle(
-                              color: primaryColor,
-                              fontWeight: FontWeight.w400,
-                              fontSize: 14,
-                            ),
-                            onPressed: gotoLogin,
+                        ),
+                        const SizedBox(width: 4),
+                        AppTextButton(
+                          text: "Login",
+                          style: const TextStyle(
+                            color: primaryColor,
+                            fontWeight: FontWeight.w400,
+                            fontSize: 14,
+                          ),
+                          onPressed: gotoLogin,
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 30),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Divider(
+                            color: lightestBlack,
+                            thickness: 1,
+                          ),
+                        ),
+                        const SizedBox(width: 20),
+                        Text(
+                          "Sign up with",
+                          style: TextStyle(
+                            color: lightBlack,
+                            fontWeight: FontWeight.w400,
+                            fontSize: 14,
+                          ),
+                        ),
+                        const SizedBox(width: 20),
+                        Expanded(
+                          child: Divider(
+                            color: lightestBlack,
+                            thickness: 1,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 30),
+                    if (!isWindows)
+                      Row(
+                        children: [
+                          // Social(
+                          //     title: "FACEBOOK", icon: IonIcons.logo_facebook),
+                          // SizedBox(width: 20),
+                          Social(
+                            title: "GOOGLE",
+                            icon: IonIcons.logo_google,
+                            onPressed: siginInWithGoogle,
                           ),
                         ],
                       ),
-                      const SizedBox(height: 30),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Divider(
-                              color: lightestBlack,
-                              thickness: 1,
-                            ),
-                          ),
-                          const SizedBox(width: 20),
-                          Text(
-                            "Sign up with",
-                            style: TextStyle(
-                              color: lightBlack,
-                              fontWeight: FontWeight.w400,
-                              fontSize: 14,
-                            ),
-                          ),
-                          const SizedBox(width: 20),
-                          Expanded(
-                            child: Divider(
-                              color: lightestBlack,
-                              thickness: 1,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 30),
-                      if (!isWindows)
-                        Row(
-                          children: [
-                            // Social(
-                            //     title: "FACEBOOK", icon: IonIcons.logo_facebook),
-                            // SizedBox(width: 20),
-                            Social(
-                              title: "GOOGLE",
-                              icon: IonIcons.logo_google,
-                              onPressed: siginInWithGoogle,
-                            ),
-                          ],
-                        ),
-                      const SizedBox(height: 60),
-                    ]),
-              ),
+                    const SizedBox(height: 60),
+                  ]),
             ),
           ),
-          if (loading) const LoadingOverlay()
-        ],
+        ),
       ),
     );
   }

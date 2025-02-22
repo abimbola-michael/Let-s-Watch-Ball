@@ -169,6 +169,7 @@ class _InviteWatchersScreenState extends ConsumerState<InviteWatchersScreen> {
         availablePlatforms.add("SMS");
       }
     }
+    if (!mounted) return;
     loading = false;
     setState(() {});
   }
@@ -209,7 +210,7 @@ class _InviteWatchersScreenState extends ConsumerState<InviteWatchersScreen> {
   }
 
   void createWatch() {
-    context.pop({"contacts": selectedUsers});
+    context.pop({"watchers": selectedUsers});
   }
 
   void copyLink(String link) {
@@ -253,12 +254,14 @@ class _InviteWatchersScreenState extends ConsumerState<InviteWatchersScreen> {
   }
 
   void findUser() async {
-    final value = findUserController.text.trim();
+    String value = findUserController.text.trim();
     if (value.isEmpty) return;
     String type = "";
     if (isValidEmail(value)) {
       type = "email";
     } else if (isValidPhoneNumber(value)) {
+      value = value.toValidNumber("+234") ?? "";
+      if (value.isEmpty) return;
       type = "phone";
     } else if (isValidUsername(value)) {
       type = "username";
@@ -307,9 +310,9 @@ class _InviteWatchersScreenState extends ConsumerState<InviteWatchersScreen> {
                 onCloseSearch: stopSearch,
               )
             : AppAppBar(
-                title: "Invite ${watch != null ? "Watchers" : "Contacts"}",
+                title: "Invite Watchers",
                 subtitle: selectedUsers.isEmpty
-                    ? "Select ${watch != null ? "Watchers" : "Contacts"}"
+                    ? "Select Watchers"
                     : "${selectedUsers.length} Selected ${watch != null ? "Watchers" : "Contacts"}",
                 trailing: Row(
                   mainAxisSize: MainAxisSize.min,
@@ -325,59 +328,64 @@ class _InviteWatchersScreenState extends ConsumerState<InviteWatchersScreen> {
                   ],
                 ),
               )) as PreferredSizeWidget?,
-        body: loading
-            ? const Center(child: CircularProgressIndicator())
-            : Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    if (watch != null)
-                      AppContainer(
-                        height: 100,
-                        margin: const EdgeInsets.only(bottom: 10),
-                        child: selectedUsers.isEmpty
-                            ? Text(
-                                "Tap contact to select",
-                                style: context.bodyMedium,
-                              )
-                            : ListView.builder(
-                                scrollDirection: Axis.horizontal,
-                                // shrinkWrap: true,
-                                itemCount: selectedUsers.length,
-                                itemBuilder: (context, index) {
-                                  final user = selectedUsers[index];
-                                  return UserHorItem(
-                                    user: user,
-                                    closable: invitedUsers.indexWhere(
-                                            (element) =>
-                                                element.id == user.id) ==
-                                        -1,
-                                    onClose: () => toggleSelect(user),
-                                  );
-                                },
-                              ),
-                      ),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: AppTextField(
-                            controller: findUserController,
-                            hintText: "Enter Username, Email or Phone number",
-                            prefix: IconButton(
-                                onPressed: gotoFindWatcheFromContacts,
-                                icon: const Icon(LineAwesome.address_book)),
-                          ),
-                        ),
-                        AppButton(
-                          title: "Add",
-                          wrapped: true,
-                          onPressed: findUser,
+        body: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (watch != null)
+                AppContainer(
+                  height: 100,
+                  margin: const EdgeInsets.only(bottom: 10),
+                  child: selectedUsers.isEmpty
+                      ? Text(
+                          "Tap contact to select",
+                          style: context.bodyMedium,
                         )
-                      ],
+                      : ListView.builder(
+                          scrollDirection: Axis.horizontal,
+                          // shrinkWrap: true,
+                          itemCount: selectedUsers.length,
+                          itemBuilder: (context, index) {
+                            final user = selectedUsers[index];
+                            return UserHorItem(
+                              user: user,
+                              closable: invitedUsers.indexWhere(
+                                      (element) => element.id == user.id) ==
+                                  -1,
+                              onClose: () => toggleSelect(user),
+                            );
+                          },
+                        ),
+                ),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Expanded(
+                    child: AppTextField(
+                      removeBottomSpacing: true,
+                      borderRadius: BorderRadius.circular(30),
+                      controller: findUserController,
+                      hintText: "Enter Username, Email or Phone number",
+                      prefix: !isAndroidAndIos
+                          ? null
+                          : IconButton(
+                              onPressed: gotoFindWatcheFromContacts,
+                              icon: const Icon(LineAwesome.address_book)),
                     ),
-                    Expanded(
-                      child: ListView.builder(
+                  ),
+                  const SizedBox(width: 8),
+                  AppButton(
+                    title: "Add",
+                    wrapped: true,
+                    onPressed: findUser,
+                  )
+                ],
+              ),
+              Expanded(
+                child: loading
+                    ? const Center(child: CircularProgressIndicator())
+                    : ListView.builder(
                         shrinkWrap: true,
                         itemCount: users.length,
                         itemBuilder: (context, index) {
@@ -404,60 +412,60 @@ class _InviteWatchersScreenState extends ConsumerState<InviteWatchersScreen> {
                           );
                         },
                       ),
-                    ),
-                    // Expanded(
-                    //   child: ListView.builder(
-                    //     shrinkWrap: true,
-                    //     itemCount: users.length + unregisteredUsers.length,
-                    //     itemBuilder: (context, index) {
-                    //       final user = index < users.length
-                    //           ? users[index]
-                    //           : unregisteredUsers[index - users.length];
-                    //       final bool selected = selectedUsers.indexWhere(
-                    //               (element) => element.id == user.id) !=
-                    //           -1;
-                    //       return Column(
-                    //         mainAxisSize: MainAxisSize.min,
-                    //         crossAxisAlignment: CrossAxisAlignment.start,
-                    //         children: [
-                    //           if (index == 0 || index == users.length)
-                    //             Padding(
-                    //               padding:
-                    //                   const EdgeInsets.symmetric(vertical: 8.0),
-                    //               child: Text(
-                    //                 index == users.length
-                    //                     ? "Invite Contacts"
-                    //                     : "Contacts on Let's Watch Ball",
-                    //                 style: context.bodySmall
-                    //                     ?.copyWith(color: lighterTint),
-                    //                 maxLines: 1,
-                    //                 overflow: TextOverflow.ellipsis,
-                    //               ),
-                    //             ),
-                    //           UserSelectItem(
-                    //             availablePlatforms: availablePlatforms,
-                    //             user: user,
-                    //             selected: selected,
-                    //             onPressed: () {
-                    //               toggleSelect(user);
-                    //             },
-                    //             onShare: (platform) => shareContactInvite(
-                    //                 platform, user.phone, user.username),
-                    //           ),
-                    //         ],
-                    //       );
-                    //     },
-                    //   ),
-                    // ),
-                    if (selectedUsers.isNotEmpty)
-                      AppButton(
-                        title: "Invite",
-                        onPressed: createWatch,
-                        margin: const EdgeInsets.symmetric(vertical: 20),
-                      )
-                  ],
-                ),
               ),
+              // Expanded(
+              //   child: ListView.builder(
+              //     shrinkWrap: true,
+              //     itemCount: users.length + unregisteredUsers.length,
+              //     itemBuilder: (context, index) {
+              //       final user = index < users.length
+              //           ? users[index]
+              //           : unregisteredUsers[index - users.length];
+              //       final bool selected = selectedUsers.indexWhere(
+              //               (element) => element.id == user.id) !=
+              //           -1;
+              //       return Column(
+              //         mainAxisSize: MainAxisSize.min,
+              //         crossAxisAlignment: CrossAxisAlignment.start,
+              //         children: [
+              //           if (index == 0 || index == users.length)
+              //             Padding(
+              //               padding:
+              //                   const EdgeInsets.symmetric(vertical: 8.0),
+              //               child: Text(
+              //                 index == users.length
+              //                     ? "Invite Contacts"
+              //                     : "Contacts on Let's Watch Ball",
+              //                 style: context.bodySmall
+              //                     ?.copyWith(color: lighterTint),
+              //                 maxLines: 1,
+              //                 overflow: TextOverflow.ellipsis,
+              //               ),
+              //             ),
+              //           UserSelectItem(
+              //             availablePlatforms: availablePlatforms,
+              //             user: user,
+              //             selected: selected,
+              //             onPressed: () {
+              //               toggleSelect(user);
+              //             },
+              //             onShare: (platform) => shareContactInvite(
+              //                 platform, user.phone, user.username),
+              //           ),
+              //         ],
+              //       );
+              //     },
+              //   ),
+              // ),
+              if (selectedUsers.isNotEmpty)
+                AppButton(
+                  title: "Invite",
+                  onPressed: createWatch,
+                  margin: const EdgeInsets.symmetric(vertical: 20),
+                )
+            ],
+          ),
+        ),
       ),
     );
   }

@@ -23,6 +23,7 @@ import 'package:watchball/features/settings/screens/settings_and_more_screen.dar
 import 'package:watchball/features/subscription/screens/subscription_screen.dart';
 import 'package:watchball/features/wallet/screens/select_users_screen.dart';
 import 'package:watchball/features/watch/screens/findorinvite_watchers_screen.dart';
+import 'package:watchball/features/watch/screens/invite_watchers_screen.dart';
 import 'package:watchball/firebase/firebase_notification.dart';
 import 'package:watchball/theme/theme.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -140,6 +141,7 @@ class MyApp extends ConsumerWidget {
         WatchRequestScreen.route: (_) => const WatchRequestScreen(),
         FindOrInviteWatchersScreen.route: (_) =>
             const FindOrInviteWatchersScreen(),
+        InviteWatchersScreen.route: (_) => const InviteWatchersScreen(),
         JoinWatchScreen.route: (_) => const JoinWatchScreen(),
         WatchInfoScreen.route: (_) => const WatchInfoScreen(),
         MatchPaymentScreen.route: (_) => const MatchPaymentScreen(),

@@ -8,6 +8,15 @@ import '../shared/components/app_bottom_sheet.dart';
 import '../firebase/firestore_methods.dart';
 import '../theme/colors.dart';
 
+extension IterableExtensions<T> on Iterable<T> {
+  T? firstWhereOrNull(bool Function(T) test) {
+    for (T element in this) {
+      if (test(element)) return element;
+    }
+    return null;
+  }
+}
+
 extension ListExtensions<T> on List<T> {
   List<List<T>> getGroupedList(String Function(T value) callback) {
     Map<String, int> idMap = {};
@@ -218,8 +227,13 @@ extension StringExtensions on String {
     }
     dialCode ??= "+1";
     bool startsWithZero = trim().startsWith("0");
-    String refinedNumber = replaceAll(r"\D", "").replaceAll(" ", "").trim();
-    return "+${startsWithZero ? "$dialCode${refinedNumber.substring(1)}" : refinedNumber}";
+    String refinedNumber = replaceAll(RegExp(r"\D"), "")
+        .replaceAll(" ", "")
+        .replaceAll("+", "")
+        .trim();
+    return startsWithZero
+        ? "$dialCode${refinedNumber.substring(1)}"
+        : "+$refinedNumber";
   }
 
   String lastChars(int n) => substring(length - n);

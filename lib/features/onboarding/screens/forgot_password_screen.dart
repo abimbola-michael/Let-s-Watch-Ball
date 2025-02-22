@@ -79,85 +79,70 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Stack(
-        children: [
-          // Positioned(
-          //   top: statusBarHeight + 20,
-          //  // right: 5,
-          //   child: const Opacity(
-          //     opacity: 0.1,
-          //     child: Logo(),
-          //     // child: SvgAsset(
-          //     //   name: "kari_logo",
-          //     //   height: 100,
-          //     //   width: 196,
-          //     // ),
-          //   ),
-          // ),
-          SingleChildScrollView(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20.0),
-              child: Form(
-                key: formKey,
-                child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      SizedBox(
-                        height: statusBarHeight + 180,
-                      ),
-                      Text("Forgot Password",
-                          style: context.headlineLarge?.copyWith(fontSize: 36)),
-                      const SizedBox(height: 30),
-                      AppTextField(
-                        hintText: "Email",
-                        controller: _emailController,
-                      ),
-                      AppButton(
-                        width: double.infinity,
-                        title: "Reset",
-                        onPressed: resetPassword,
-                      ),
-                      const SizedBox(height: 30),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          AppTextButton(
-                            text: "Sign Up",
-                            style: const TextStyle(
-                              color: primaryColor,
-                              fontWeight: FontWeight.w400,
-                              fontSize: 14,
-                            ),
-                            onPressed: gotoSignUp,
+      body: LoadingOverlay(
+        loading: loading,
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20.0),
+            child: Form(
+              key: formKey,
+              child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    SizedBox(
+                      height: statusBarHeight + 180,
+                    ),
+                    Text("Forgot Password",
+                        style: context.headlineLarge?.copyWith(fontSize: 36)),
+                    const SizedBox(height: 30),
+                    AppTextField(
+                      hintText: "Email",
+                      controller: _emailController,
+                    ),
+                    AppButton(
+                      width: double.infinity,
+                      title: "Reset",
+                      onPressed: resetPassword,
+                    ),
+                    const SizedBox(height: 30),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        AppTextButton(
+                          text: "Sign Up",
+                          style: const TextStyle(
+                            color: primaryColor,
+                            fontWeight: FontWeight.w400,
+                            fontSize: 14,
                           ),
-                          const SizedBox(width: 10),
-                          Text(
-                            "|",
-                            style: TextStyle(
-                              color: lightTint,
-                              fontWeight: FontWeight.w400,
-                              fontSize: 14,
-                            ),
+                          onPressed: gotoSignUp,
+                        ),
+                        const SizedBox(width: 10),
+                        Text(
+                          "|",
+                          style: TextStyle(
+                            color: lightTint,
+                            fontWeight: FontWeight.w400,
+                            fontSize: 14,
                           ),
-                          const SizedBox(width: 10),
-                          AppTextButton(
-                            text: "Login",
-                            style: const TextStyle(
-                              color: primaryColor,
-                              fontWeight: FontWeight.w400,
-                              fontSize: 14,
-                            ),
-                            onPressed: gotoLogin,
+                        ),
+                        const SizedBox(width: 10),
+                        AppTextButton(
+                          text: "Login",
+                          style: const TextStyle(
+                            color: primaryColor,
+                            fontWeight: FontWeight.w400,
+                            fontSize: 14,
                           ),
-                        ],
-                      ),
-                      const SizedBox(height: 60),
-                    ]),
-              ),
+                          onPressed: gotoLogin,
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 60),
+                  ]),
             ),
           ),
-          if (loading) const LoadingOverlay()
-        ],
+        ),
       ),
     );
   }

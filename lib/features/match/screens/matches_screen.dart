@@ -1,5 +1,7 @@
 import 'dart:async';
+import 'dart:math';
 
+import 'package:custom_refresh_indicator/custom_refresh_indicator.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:icons_plus/icons_plus.dart';
@@ -55,7 +57,11 @@ class _MatchesScreenState extends ConsumerState<MatchesScreen> {
     super.dispose();
   }
 
-  void readLiveMatches() async {
+  Future readLiveMatches() async {
+    leaguesMatches.clear();
+    toplayLeagueMatches.clear();
+    playedLeagueMatches.clear();
+    liveLeagueMatches.clear();
     // matches = allLiveMatches;
 
     matches = await getMatches();
@@ -183,6 +189,7 @@ class _MatchesScreenState extends ConsumerState<MatchesScreen> {
                 child: TabBarView(
                   children: List.generate(tabs.length, (index) {
                     return MatchesListScreen(
+                      onRefresh: readLiveMatches,
                       onSelect: widget.onSelect,
                       loading: loading,
                       leaguesMatches: index == 0

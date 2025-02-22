@@ -71,8 +71,8 @@ Future updateWatchsUsers(List<Watch> watchs) async {
 Future updateWatchUsers(Watch watch) async {
   if (watch.users.isEmpty) {
     for (int i = 0; i < watch.watchersIds.length; i++) {
-      final watchersId = watch.watchersIds[i];
-      final user = await getUser(watchersId);
+      final watcherId = watch.watchersIds[i];
+      final user = await getUser(watcherId);
       if (user != null) {
         watch.users.add(user);
       }
@@ -114,7 +114,7 @@ Future<Watch?> createWatch(
       creatorId: myId,
       callMode: callMode,
       watchersIds: users.map((e) => e.id).toList(),
-      joinedWatchersIds: [myId],
+      joinedWatchersIds: [],
       createdAt: time,
       modifiedAt: time,
       records: []);
@@ -135,6 +135,7 @@ Future addWatchers(
   // final match = watch.match;
 
   List<String> newlyAddedWatchersIds = [];
+  List<String> newlyJoinedWatchersIds = [];
 
   final length = watchersIds.isNotEmpty ? watchersIds.length : users.length;
   for (int i = 0; i < length; i++) {
@@ -160,8 +161,11 @@ Future addWatchers(
                 : "invite",
         action: "calling",
         time: time,
-        callMode: watcherId == myId ? callMode : null,
-        match: watch.match);
+        match: watch.match,
+        callMode: watcherId == myId ? (callMode ?? "audio") : null,
+        isAudioOn: true,
+        isFrontCamera: true,
+        isOnHold: false);
 
     if (users.isNotEmpty && watcher.user == null) {
       watcher.user = users[i];
@@ -169,7 +173,10 @@ Future addWatchers(
     if (watchersIds.isNotEmpty && watcher.user == null) {
       watcher.user = await getUser(watcherId);
     }
-    watch.joinedWatchersIds.add(watcherId);
+    if (watcher.status == "current") {
+      watch.joinedWatchersIds.add(watcherId);
+      newlyJoinedWatchersIds.add(watcherId);
+    }
     watch.watchers.add(watcher);
 
     await fm.setValue(["watchs", watchId, "watchers", watcherId],
@@ -180,9 +187,16 @@ Future addWatchers(
       newlyAddedWatchersIds.add(watcherId);
     }
   }
-  if (newlyAddedWatchersIds.isNotEmpty) {
-    await fm.updateValue(["watchs", watchId],
-        value: {"watchersIds": FieldValue.arrayUnion(newlyAddedWatchersIds)});
+  if (newlyAddedWatchersIds.isNotEmpty || newlyJoinedWatchersIds.isNotEmpty) {
+    await fm.updateValue([
+      "watchs",
+      watchId
+    ], value: {
+      if (newlyAddedWatchersIds.isNotEmpty)
+        "watchersIds": FieldValue.arrayUnion(newlyAddedWatchersIds),
+      if (newlyJoinedWatchersIds.isNotEmpty)
+        "joinedWatchersIds": FieldValue.arrayUnion(newlyJoinedWatchersIds)
+    });
   }
 }
 
@@ -219,7 +233,9 @@ Future removeWatchers(
     final currentWatchers =
         watch.watchers.where((element) => element.status == "current");
 
-    if (currentWatchers.isEmpty) {
+    print("remainigWatchers = ${watch.watchers}");
+    if (watch.watchers.isEmpty ||
+        (watch.watchers.length == 1 && watch.watchers.first.id == myId)) {
       await fm.removeValue(["watchs", watchId]);
     } else {
       await fm.removeValue(["watchs", watchId, "watchers", watcherId]);
@@ -283,7 +299,7 @@ Stream<List<Watcher>> streamWatchers(String watchId) async* {
 Stream<List<ValueChange<Watcher>>> streamChangeWatchers(String watchId) async* {
   yield* fm.getValuesChangeStream(
       (map) => Watcher.fromMap(map), ["watchs", watchId, "watchers"],
-      order: ["time"], where: ["id", "!=", myId]);
+      order: ["id"], where: ["id", "!=", myId]);
 }
 
 // Stream<List<WatchedMatch>> streamWatchedMatch() async* {
@@ -420,14 +436,36 @@ Future updateCallCamera(String watchId, bool isFrontCamera) {
 Stream<List<ValueChange<Map<String, dynamic>>>> streamChangeSignals(
     String watchId) async* {
   yield* fm.getValuesChangeStream(
-      (map) => map, ["watchs", watchId, "watchers", myId, "signal"]);
+      (map) => map, ["watchs", watchId, "watchers", myId, "signal"],
+      order: ["time"]);
 }
 
 Future addSignal(
     String watchId, String userId, Map<String, dynamic> value) async {
   return fm.setValue(["watchs", watchId, "watchers", userId, "signal", myId],
-      value: {...value, "id": myId});
+      value: {...value, "id": myId, "time": timeNow}, merge: true);
 }
+// Future addSignal(
+//     String watchId, String userId, Map<String, dynamic> value) async {
+//   final type = value["type"];
+//   final result = type == "candidates"
+//       ? {"candidates": value["candidates"]}
+//       : {type: value["sdp"], (type == "offer" ? "answer" : "offer"): null};
+
+//   return fm.setValue([
+//     "watchs",
+//     watchId,
+//     "watchers",
+//     userId,
+//     "signal",
+//     myId
+//   ], value: {
+//     ...result,
+//     "isVideoOn": value["isVideoOn"],
+//     "id": myId,
+//     "time": timeNow
+//   }, merge: true);
+// }
 
 Future removeSignal(String watchId, String userId) {
   return fm.removeValue(["watchs", watchId, "watchers", userId, "signal"]);

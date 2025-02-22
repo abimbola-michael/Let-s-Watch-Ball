@@ -10,6 +10,7 @@ import 'package:watchball/features/user/enums/enums.dart';
 import 'package:watchball/features/user/services/user_service.dart';
 import 'package:watchball/features/watch/models/watcher.dart';
 import 'package:watchball/features/watch/services/watch_service.dart';
+import 'package:watchball/shared/views/empty_list_view.dart';
 import 'package:watchball/utils/country_code_utils.dart';
 import 'package:watchball/utils/extensions.dart';
 import 'package:watchball/utils/utils.dart';
@@ -105,7 +106,11 @@ class ContactsListView extends ConsumerWidget {
       return contact.name!.toLowerCase().contains(searchText) ||
           contact.phone.toLowerCase().contains(searchText);
     }).toList();
+    if (phoneContacts.isEmpty) {
+      return const EmptyListView(message: "No Contact");
+    }
     return ListView.builder(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
       shrinkWrap: true,
       itemCount: phoneContacts.length,
       itemBuilder: (context, index) {
@@ -144,6 +149,7 @@ class ContactsListView extends ConsumerWidget {
             return UserSelectItem(
               availablePlatforms: availablePlatforms,
               user: user,
+              contactStatus: phoneContact.contactStatus,
               onPressed: () {
                 if (phoneContact.contactStatus == ContactStatus.unadded) {
                   addContact(phoneContact, ref);

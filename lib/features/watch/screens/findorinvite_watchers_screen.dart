@@ -30,6 +30,7 @@ import '../models/watch.dart';
 import '../models/watcher.dart';
 import '../../user/services/user_service.dart';
 import '../../../theme/colors.dart';
+import '../providers/search_contacts_provider.dart';
 import '../utils/utils.dart';
 import '../views/contacts_list_view.dart';
 
@@ -137,10 +138,14 @@ class _FindOrInviteWatchersScreenState
     String? dialCode = await getCurrentCountryDialingCode();
     //final usersBox = Hive.box<String>("users");
     final phoneContactsBox = Hive.box<String>("contacts");
+    //phoneContactsBox.clear();
 
     List<PhoneContact> phoneContacts =
         phoneContactsBox.values.map((e) => PhoneContact.fromJson(e)).toList();
     getAvailablePlatforms(phoneContacts);
+
+    phoneContacts
+        .sort((a, b) => (a.name ?? a.phone).compareTo((b.name ?? b.phone)));
 
     ref.read(contactsProvider.notifier).setPhoneContacts(phoneContacts);
 
@@ -181,6 +186,8 @@ class _FindOrInviteWatchersScreenState
     }
     phoneContacts =
         phoneContactsBox.values.map((e) => PhoneContact.fromJson(e)).toList();
+    phoneContacts
+        .sort((a, b) => (a.name ?? a.phone).compareTo((b.name ?? b.phone)));
 
     ref.read(contactsProvider.notifier).setPhoneContacts(phoneContacts);
     getAvailablePlatforms(phoneContacts);
@@ -219,10 +226,9 @@ class _FindOrInviteWatchersScreenState
   }
 
   void updateSearch(String value) {
-    setState(() {});
-    // ref
-    //     .read(searchMatchProvider.notifier)
-    //     .updateSearch(value.trim().toLowerCase());
+    ref
+        .read(searchContactsProvider.notifier)
+        .updateSearch(value.trim().toLowerCase());
   }
 
   void stopSearch() {
@@ -258,7 +264,11 @@ class _FindOrInviteWatchersScreenState
                 trailing: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    if (loading) const CircularProgressIndicator(),
+                    if (loading)
+                      const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator()),
                     IconButton(
                       onPressed: startSearch,
                       icon: const Icon(EvaIcons.search, color: white),
@@ -279,7 +289,6 @@ class _FindOrInviteWatchersScreenState
                     isInvite: true, availablePlatforms: availablePlatforms)
                 : DefaultTabController(
                     length: ContactStatus.values.length,
-                    initialIndex: 1,
                     child: Column(
                       children: [
                         TabBar(

@@ -32,7 +32,7 @@ String getMatchString(LiveMatch? match) {
     "league": match.league,
     "homeName": match.homeName,
     "homeLogo": match.homeLogo,
-    "awayName": match.homeName,
+    "awayName": match.awayName,
     "awayLogo": match.awayLogo,
   };
   return jsonEncode(details);

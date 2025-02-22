@@ -111,7 +111,7 @@ class _MainScreenState extends ConsumerState<MainScreen> {
   }
 
   void getCountryDialCode() async {
-    countryDialCode = await getCurrentCountryDialingCode() ?? "";
+    await getCurrentCountryDialingCode();
   }
 
   // void listenForUserUpdate() async {

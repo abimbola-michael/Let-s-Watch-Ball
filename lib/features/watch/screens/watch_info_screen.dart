@@ -43,51 +43,55 @@ class _WatchInfoScreenState extends State<WatchInfoScreen> {
       appBar: const AppAppBar(
         title: "Watch Info",
       ),
-      body: Column(
-        children: [
-          Expanded(
-            child: ListView(
-              children: [
-                WatchItem(watch: watch),
-                const SizedBox(height: 10),
-                Text(
-                  "Watchers",
-                  style:
-                      context.bodyMedium?.copyWith(fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 8),
-                ListView.builder(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  itemCount: watch.users.length,
-                  itemBuilder: (context, index) {
-                    return WatcherUserItem(watch: watch, index: index);
-                  },
-                ),
-                const SizedBox(height: 10),
-                Text(
-                  "Records",
-                  style:
-                      context.bodyMedium?.copyWith(fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 8),
-                ListView.builder(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  itemCount: watch.records.length,
-                  itemBuilder: (context, index) {
-                    return WatchRecordItem(watch: watch, index: index);
-                  },
-                )
-              ],
+      body: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 20),
+        child: Column(
+          children: [
+            Expanded(
+              child: ListView(
+                children: [
+                  WatchItem(watch: watch),
+                  const SizedBox(height: 10),
+                  Text(
+                    "Watchers",
+                    style: context.bodyMedium
+                        ?.copyWith(fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 8),
+                  ListView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemCount: watch.users.length,
+                    itemBuilder: (context, index) {
+                      return WatcherUserItem(watch: watch, index: index);
+                    },
+                  ),
+                  const SizedBox(height: 10),
+                  Text(
+                    "Records",
+                    style: context.bodyMedium
+                        ?.copyWith(fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 8),
+                  ListView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemCount: watch.records.length,
+                    itemBuilder: (context, index) {
+                      return WatchRecordItem(watch: watch, index: index);
+                    },
+                  )
+                ],
+              ),
             ),
-          ),
-          const SizedBox(height: 20),
-          AppButton(
-            title: "Rewatch",
-            onPressed: gotoStreamMatch,
-          ),
-        ],
+            const SizedBox(height: 20),
+            AppButton(
+              title: "Rewatch",
+              onPressed: gotoStreamMatch,
+            ),
+            const SizedBox(height: 20),
+          ],
+        ),
       ),
     );
   }

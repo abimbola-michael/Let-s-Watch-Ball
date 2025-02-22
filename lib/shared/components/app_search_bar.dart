@@ -51,6 +51,7 @@ class _AppSearchBarState extends State<AppSearchBar> {
                   ),
                 Expanded(
                   child: TextField(
+                    autofocus: true,
                     onTap: widget.onPressed,
                     controller: widget.controller,
                     onChanged: (value) {

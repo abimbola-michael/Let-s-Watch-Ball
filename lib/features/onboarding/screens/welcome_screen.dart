@@ -67,168 +67,170 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: AppContainer(
-        color: black,
-        //image: const AssetImage("assets/images/png/mask.png"),
-        //  padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 20),
-        child: Stack(
-          children: [
-            // Positioned(
-            //   top: statusBarHeight + 20,
-            //   right: 20,
-            //   child: const AppButton(
-            //     fontSize: 12,
-            //     title: "Skip",
-            //     color: darkBlack,
-            //   ),
-            // ),
-            Positioned(
-              top: 150,
-              left: 40,
-              right: 40,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  SizedBox(
-                    height: 45,
-                    child: Text(
-                      "Welcome",
-                      style: context.headlineLarge?.copyWith(color: white),
-                    ),
-                  ),
-                  SizedBox(
-                    height: 25,
-                    child: Text.rich(
-                      TextSpan(
-                        text: "to ",
-                        style: context.headlineMedium?.copyWith(color: white),
-                        children: [
-                          TextSpan(
-                            text: "Watch Ball",
-                            style: context.headlineMedium
-                                ?.copyWith(color: primaryColor),
-                          ),
-                        ],
+      body: LoadingOverlay(
+        loading: loading,
+        child: AppContainer(
+          color: black,
+          //image: const AssetImage("assets/images/png/mask.png"),
+          //  padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 20),
+          child: Stack(
+            children: [
+              // Positioned(
+              //   top: statusBarHeight + 20,
+              //   right: 20,
+              //   child: const AppButton(
+              //     fontSize: 12,
+              //     title: "Skip",
+              //     color: darkBlack,
+              //   ),
+              // ),
+              Positioned(
+                top: 150,
+                left: 40,
+                right: 40,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    SizedBox(
+                      height: 45,
+                      child: Text(
+                        "Welcome",
+                        style: context.headlineLarge?.copyWith(color: white),
                       ),
                     ),
-                  ),
-                  const SizedBox(
-                    height: 12,
-                  ),
-                  Text(
-                    "Together we watch",
-                    style: context.bodyMedium?.copyWith(color: white),
-                  ),
-                ],
+                    SizedBox(
+                      height: 25,
+                      child: Text.rich(
+                        TextSpan(
+                          text: "to ",
+                          style: context.headlineMedium?.copyWith(color: white),
+                          children: [
+                            TextSpan(
+                              text: "Watch Ball",
+                              style: context.headlineMedium
+                                  ?.copyWith(color: primaryColor),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(
+                      height: 12,
+                    ),
+                    Text(
+                      "Together we watch",
+                      style: context.bodyMedium?.copyWith(color: white),
+                    ),
+                  ],
+                ),
               ),
-            ),
-            Positioned(
-              bottom: 30,
-              left: 30,
-              right: 30,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Divider(
-                          color: white.withOpacity(0.5),
-                          thickness: 1,
-                        ),
-                      ),
-                      const SizedBox(width: 20),
-                      const Text(
-                        "sign in with",
-                        style: TextStyle(
-                          color: white,
-                          fontWeight: FontWeight.w400,
-                          fontSize: 14,
-                        ),
-                      ),
-                      const SizedBox(width: 20),
-                      Expanded(
-                        child: Divider(
-                          color: white.withOpacity(0.5),
-                          thickness: 1,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(
-                    height: 20,
-                  ),
-                  if (!isWindows)
+              Positioned(
+                bottom: 30,
+                left: 30,
+                right: 30,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
                     Row(
                       children: [
-                        // Social(title: "FACEBOOK", icon: IonIcons.logo_facebook),
-                        // SizedBox(width: 20),
-                        Social(
-                          title: "GOOGLE",
-                          icon: IonIcons.logo_google,
-                          onPressed: siginInWithGoogle,
+                        Expanded(
+                          child: Divider(
+                            color: white.withOpacity(0.5),
+                            thickness: 1,
+                          ),
+                        ),
+                        const SizedBox(width: 20),
+                        const Text(
+                          "sign in with",
+                          style: TextStyle(
+                            color: white,
+                            fontWeight: FontWeight.w400,
+                            fontSize: 14,
+                          ),
+                        ),
+                        const SizedBox(width: 20),
+                        Expanded(
+                          child: Divider(
+                            color: white.withOpacity(0.5),
+                            thickness: 1,
+                          ),
                         ),
                       ],
                     ),
-                  const SizedBox(
-                    height: 20,
-                  ),
-                  Button(
-                    height: 50,
-                    color: lightestWhite,
-                    borderColor: white,
-                    borderRadius: BorderRadius.circular(25),
-                    child: const Text(
-                      "Start with email",
-                      style: TextStyle(
-                        fontSize: 17,
-                        fontWeight: FontWeight.w400,
-                        color: white,
-                      ),
+                    const SizedBox(
+                      height: 20,
                     ),
-                    onPressed: () {
-                      context.pushNamedAndPop(SignupScreen.route);
-                    },
-                  ),
-                  const SizedBox(
-                    height: 15,
-                  ),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Text(
-                        "Already have an account?",
+                    if (!isWindows)
+                      Row(
+                        children: [
+                          // Social(title: "FACEBOOK", icon: IonIcons.logo_facebook),
+                          // SizedBox(width: 20),
+                          Social(
+                            title: "GOOGLE",
+                            icon: IonIcons.logo_google,
+                            onPressed: siginInWithGoogle,
+                          ),
+                        ],
+                      ),
+                    const SizedBox(
+                      height: 20,
+                    ),
+                    Button(
+                      height: 50,
+                      color: lightestWhite,
+                      borderColor: white,
+                      borderRadius: BorderRadius.circular(25),
+                      child: const Text(
+                        "Start with email",
                         style: TextStyle(
+                          fontSize: 17,
+                          fontWeight: FontWeight.w400,
                           color: white,
-                          fontWeight: FontWeight.w400,
-                          fontSize: 14,
                         ),
                       ),
-                      const SizedBox(
-                        width: 4,
-                      ),
-                      AppTextButton(
-                        text: "Login",
-                        style: const TextStyle(
-                          color: primaryColor,
-                          fontWeight: FontWeight.w400,
-                          fontSize: 14,
-                          // decoration: TextDecoration.underline,
-                          // decorationColor: primaryColor,
+                      onPressed: () {
+                        context.pushNamedAndPop(SignupScreen.route);
+                      },
+                    ),
+                    const SizedBox(
+                      height: 15,
+                    ),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Text(
+                          "Already have an account?",
+                          style: TextStyle(
+                            color: white,
+                            fontWeight: FontWeight.w400,
+                            fontSize: 14,
+                          ),
                         ),
-                        onPressed: () {
-                          //context.pushNamedTo(MainScreen.route);
-                          context.pushNamedAndPop(LoginScreen.route);
-                        },
-                      ),
-                    ],
-                  ),
-                ],
+                        const SizedBox(
+                          width: 4,
+                        ),
+                        AppTextButton(
+                          text: "Login",
+                          style: const TextStyle(
+                            color: primaryColor,
+                            fontWeight: FontWeight.w400,
+                            fontSize: 14,
+                            // decoration: TextDecoration.underline,
+                            // decorationColor: primaryColor,
+                          ),
+                          onPressed: () {
+                            //context.pushNamedTo(MainScreen.route);
+                            context.pushNamedAndPop(LoginScreen.route);
+                          },
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
-            ),
-            if (loading) const LoadingOverlay()
-          ],
+            ],
+          ),
         ),
       ),
     );

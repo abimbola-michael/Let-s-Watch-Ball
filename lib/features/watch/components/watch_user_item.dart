@@ -24,7 +24,7 @@ class WatcherUserItem extends StatelessWidget {
   Widget build(BuildContext context) {
     final user = watch.users[index];
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+      padding: const EdgeInsets.symmetric(vertical: 8),
       child: Row(
         children: [
           ProfilePhoto(

@@ -181,158 +181,163 @@ class _ProfileScreenState extends State<ProfileScreen> {
             )
           : Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Column(
-                children: [
-                  const SizedBox(
-                    height: 20,
-                  ),
-                  Stack(
-                    alignment: Alignment.center,
-                    children: [
-                      Container(
-                        height: 120,
-                        width: 120,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: lightestTint,
-                          image: filePath != null
-                              ? DecorationImage(
-                                  image: FileImage(File(filePath!)))
-                              : user?.photo != null
-                                  ? DecorationImage(
-                                      image: CachedNetworkImageProvider(
-                                          user!.photo))
-                                  : null,
+              child: SingleChildScrollView(
+                child: Column(
+                  children: [
+                    const SizedBox(
+                      height: 20,
+                    ),
+                    Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        Container(
+                          height: 120,
+                          width: 120,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: lightestTint,
+                            image: filePath != null
+                                ? DecorationImage(
+                                    image: FileImage(File(filePath!)))
+                                : user?.photo != null
+                                    ? DecorationImage(
+                                        image: CachedNetworkImageProvider(
+                                            user!.photo))
+                                    : null,
+                          ),
+                          child: filePath != null || user?.photo != null
+                              ? null
+                              : Icon(
+                                  EvaIcons.person,
+                                  size: 60,
+                                  color: tint,
+                                ),
                         ),
-                        child: filePath != null || user?.photo != null
-                            ? null
-                            : Icon(
-                                EvaIcons.person,
-                                size: 60,
-                                color: tint,
+                        Positioned(
+                          bottom: 0,
+                          right: 0,
+                          child: GestureDetector(
+                            onTap: changePhoto,
+                            child: const CircleAvatar(
+                              radius: 20,
+                              backgroundColor: primaryColor,
+                              child: Icon(
+                                IonIcons.camera,
+                                color: Colors.white,
+                                size: 16,
                               ),
-                      ),
-                      Positioned(
-                        bottom: 0,
-                        right: 0,
-                        child: GestureDetector(
-                          onTap: changePhoto,
-                          child: const CircleAvatar(
-                            radius: 20,
-                            backgroundColor: primaryColor,
-                            child: Icon(
-                              IonIcons.camera,
-                              color: Colors.white,
-                              size: 16,
                             ),
                           ),
                         ),
-                      ),
-                      if (uploadingOrRemoving) const CircularProgressIndicator()
-                    ],
-                  ),
-                  const SizedBox(
-                    height: 8,
-                  ),
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      if (filePath != null ||
-                          (user?.photo ?? "").isNotEmpty) ...[
-                        const SizedBox(width: 8),
-                        TextButton(
-                          onPressed: removePhoto,
-                          child: Text(
-                            filePath != null ? "Remove Photo" : "Delete Photo",
-                            style:
-                                context.bodyMedium?.copyWith(color: Colors.red),
-                          ),
-                        ),
+                        if (uploadingOrRemoving)
+                          const CircularProgressIndicator()
                       ],
-                      if (filePath != null)
-                        TextButton(
-                          onPressed: uploadPhoto,
-                          child: Text(
-                            "Save Photo",
-                            style: context.bodyMedium
-                                ?.copyWith(color: primaryColor),
-                          ),
-                        ),
-                    ],
-                  ),
-                  const SizedBox(
-                    height: 20,
-                  ),
-                  AboutItem(
-                    title: "Username",
-                    value: user?.name ?? "",
-                    editable: userId == myId,
-                    onEdit: () => gotoEditProfilePage("username"),
-                  ),
-                  AboutItem(
-                    title: "Name",
-                    value: user?.name ?? "",
-                    editable: userId == myId,
-                    onEdit: () => gotoEditProfilePage("name"),
-                  ),
-                  if (userId == myId)
-                    AboutItem(
-                      title: "Phone Number",
-                      value: user?.phone ?? "",
-                      editable: userId == myId,
-                      onEdit: () => gotoEditProfilePage("phone"),
                     ),
+                    const SizedBox(
+                      height: 8,
+                    ),
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (filePath != null ||
+                            (user?.photo ?? "").isNotEmpty) ...[
+                          const SizedBox(width: 8),
+                          TextButton(
+                            onPressed: removePhoto,
+                            child: Text(
+                              filePath != null
+                                  ? "Remove Photo"
+                                  : "Delete Photo",
+                              style: context.bodyMedium
+                                  ?.copyWith(color: Colors.red),
+                            ),
+                          ),
+                        ],
+                        if (filePath != null)
+                          TextButton(
+                            onPressed: uploadPhoto,
+                            child: Text(
+                              "Save Photo",
+                              style: context.bodyMedium
+                                  ?.copyWith(color: primaryColor),
+                            ),
+                          ),
+                      ],
+                    ),
+                    const SizedBox(
+                      height: 20,
+                    ),
+                    AboutItem(
+                      title: "Username",
+                      value: user?.name ?? "",
+                      editable: userId == myId,
+                      onEdit: () => gotoEditProfilePage("username"),
+                    ),
+                    AboutItem(
+                      title: "Name",
+                      value: user?.name ?? "",
+                      editable: userId == myId,
+                      onEdit: () => gotoEditProfilePage("name"),
+                    ),
+                    if (userId == myId)
+                      AboutItem(
+                        title: "Phone Number",
+                        value: user?.phone ?? "",
+                        editable: userId == myId,
+                        onEdit: () => gotoEditProfilePage("phone"),
+                      ),
 
-                  AboutItem(
-                    title: "Best Player",
-                    value: user?.bestPlayer ?? "",
-                    editable: userId == myId,
-                    onEdit: () => gotoEditProfilePage("bestPlayer"),
-                  ),
-                  AboutItem(
-                    title: "Best Club",
-                    value: user?.bestClub ?? "",
-                    editable: userId == myId,
-                    onEdit: () => gotoEditProfilePage("bestClub"),
-                  ),
-                  AboutItem(
-                    title: "Best Country",
-                    value: user?.bestCountry ?? "",
-                    editable: userId == myId,
-                    onEdit: () => gotoEditProfilePage("bestCountry"),
-                  ),
-                  // if (userId == myId) ...[
-                  //   AboutItem(
-                  //     title: "Email",
-                  //     value: user?.email ?? "",
-                  //     editable: true,
-                  //     onEdit: () => gotoEditProfilePage("email"),
-                  //   ),
-                  //   AboutItem(
-                  //     title: "Password",
-                  //     value: "",
-                  //     editable: true,
-                  //     onEdit: () => gotoEditProfilePage("password"),
-                  //   ),
-                  // ]
+                    AboutItem(
+                      title: "Best Player",
+                      value: user?.bestPlayer ?? "",
+                      editable: userId == myId,
+                      onEdit: () => gotoEditProfilePage("bestPlayer"),
+                    ),
+                    AboutItem(
+                      title: "Best Club",
+                      value: user?.bestClub ?? "",
+                      editable: userId == myId,
+                      onEdit: () => gotoEditProfilePage("bestClub"),
+                    ),
+                    AboutItem(
+                      title: "Best Country",
+                      value: user?.bestCountry ?? "",
+                      editable: userId == myId,
+                      onEdit: () => gotoEditProfilePage("bestCountry"),
+                    ),
+                    // if (userId == myId) ...[
+                    //   AboutItem(
+                    //     title: "Email",
+                    //     value: user?.email ?? "",
+                    //     editable: true,
+                    //     onEdit: () => gotoEditProfilePage("email"),
+                    //   ),
+                    //   AboutItem(
+                    //     title: "Password",
+                    //     value: "",
+                    //     editable: true,
+                    //     onEdit: () => gotoEditProfilePage("password"),
+                    //   ),
+                    // ]
 
-                  // Text(
-                  //   userOne.name,
-                  //   style: context.headlineMedium?.copyWith(fontSize: 18),
-                  // ),
-                  // ProfileStatItem(
-                  //   title: "Contacts",
-                  //   count: 278,
-                  //   onPressed: viewContacts,
-                  // ),
-                  // const SizedBox(
-                  //   height: 20,
-                  // ),
-                  // const AboutItem(title: "My Football Nickname", value: "Rooney"),
-                  // const AboutItem(title: "My Goat", value: "Messi"),
-                  // const AboutItem(title: "My Favorite Club", value: "Real Madrid"),
-                  // const AboutItem(title: "My Favorite Country", value: "England"),
-                ],
+                    // Text(
+                    //   userOne.name,
+                    //   style: context.headlineMedium?.copyWith(fontSize: 18),
+                    // ),
+                    // ProfileStatItem(
+                    //   title: "Contacts",
+                    //   count: 278,
+                    //   onPressed: viewContacts,
+                    // ),
+                    // const SizedBox(
+                    //   height: 20,
+                    // ),
+                    // const AboutItem(title: "My Football Nickname", value: "Rooney"),
+                    // const AboutItem(title: "My Goat", value: "Messi"),
+                    // const AboutItem(title: "My Favorite Club", value: "Real Madrid"),
+                    // const AboutItem(title: "My Favorite Country", value: "England"),
+                  ],
+                ),
               ),
               // child: NestedScrollView(
               //     headerSliverBuilder: (context, innerScrolled) {

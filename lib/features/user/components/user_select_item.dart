@@ -46,7 +46,9 @@ class UserSelectItem extends StatelessWidget {
           children: [
             Stack(
               children: [
-                ProfilePhoto(profilePhoto: user.photo, name: user.username),
+                ProfilePhoto(
+                    profilePhoto: user.photo,
+                    name: user.phoneName ?? user.name),
                 if (selected != null)
                   Positioned(
                     bottom: 0,

@@ -50,7 +50,7 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   void gotoForgotPassword() {
-    context.pushNamedAndPop(ForgotPasswordScreen.route);
+    context.pushNamedTo(ForgotPasswordScreen.route);
   }
 
   void gotoNext() {
@@ -75,7 +75,9 @@ class _LoginScreenState extends State<LoginScreen> {
 
         if (result.user != null) {
           if (result.user!.emailVerified) {
-            FirebaseNotification().updateFirebaseToken();
+            if (isAndroidAndIos) {
+              FirebaseNotification().updateFirebaseToken();
+            }
             context.pushNamedAndPop(MainScreen.route);
           } else {
             context.showAlertDialog((context) {
@@ -148,129 +150,119 @@ class _LoginScreenState extends State<LoginScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       extendBody: true,
-      body: Stack(
-        children: [
-          // Positioned(
-          //   top: statusBarHeight + 20,
-          //   right: 5,
-          //   child: const Opacity(
-          //     opacity: 0.1,
-          //     child: Logo(),
-          //   ),
-          // ),
-          SingleChildScrollView(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20.0),
-              child: Form(
-                key: formKey,
-                child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      SizedBox(
-                        height: statusBarHeight + 150,
-                      ),
-                      Text("Login",
-                          style: context.headlineLarge?.copyWith(fontSize: 36)),
-                      const SizedBox(
-                        height: 20,
-                      ),
-                      AppTextField(
-                        hintText: "Email",
-                        controller: _emailController,
-                      ),
-                      AppTextField(
-                        hintText: "Password",
-                        controller: _passwordController,
-                      ),
-                      const SizedBox(height: 10),
-                      AppButton(
-                        width: double.infinity,
-                        title: "Login",
-                        onPressed: loginToApp,
-                      ),
-                      const SizedBox(height: 20),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(
-                            "Don't have an account?",
-                            style: TextStyle(
-                              color: lightTint,
-                              fontWeight: FontWeight.w400,
-                              fontSize: 14,
-                            ),
+      body: LoadingOverlay(
+        loading: loading,
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20.0),
+            child: Form(
+              key: formKey,
+              child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    SizedBox(
+                      height: statusBarHeight + 150,
+                    ),
+                    Text("Login",
+                        style: context.headlineLarge?.copyWith(fontSize: 36)),
+                    const SizedBox(
+                      height: 20,
+                    ),
+                    AppTextField(
+                      hintText: "Email",
+                      controller: _emailController,
+                    ),
+                    AppTextField(
+                      hintText: "Password",
+                      controller: _passwordController,
+                    ),
+                    const SizedBox(height: 10),
+                    AppButton(
+                      width: double.infinity,
+                      title: "Login",
+                      onPressed: loginToApp,
+                    ),
+                    const SizedBox(height: 20),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          "Don't have an account?",
+                          style: TextStyle(
+                            color: lightTint,
+                            fontWeight: FontWeight.w400,
+                            fontSize: 14,
                           ),
-                          const SizedBox(width: 4),
-                          AppTextButton(
-                            text: "Sign Up",
-                            style: const TextStyle(
-                              color: primaryColor,
-                              fontWeight: FontWeight.w400,
-                              fontSize: 14,
-                            ),
-                            onPressed: gotoSignUp,
-                          ),
-                        ],
-                      ),
-                      Center(
-                        child: AppTextButton(
-                          text: "Forgot Password",
+                        ),
+                        const SizedBox(width: 4),
+                        AppTextButton(
+                          text: "Sign Up",
                           style: const TextStyle(
                             color: primaryColor,
                             fontWeight: FontWeight.w400,
-                            fontSize: 12,
+                            fontSize: 14,
                           ),
-                          onPressed: gotoForgotPassword,
+                          onPressed: gotoSignUp,
                         ),
+                      ],
+                    ),
+                    Center(
+                      child: AppTextButton(
+                        text: "Forgot Password",
+                        style: const TextStyle(
+                          color: primaryColor,
+                          fontWeight: FontWeight.w400,
+                          fontSize: 12,
+                        ),
+                        onPressed: gotoForgotPassword,
                       ),
-                      const SizedBox(height: 30),
+                    ),
+                    const SizedBox(height: 30),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Divider(
+                            color: lightestBlack,
+                            thickness: 1,
+                          ),
+                        ),
+                        const SizedBox(width: 20),
+                        Text(
+                          "Sign up with",
+                          style: TextStyle(
+                            color: lightBlack,
+                            fontWeight: FontWeight.w400,
+                            fontSize: 14,
+                          ),
+                        ),
+                        const SizedBox(width: 20),
+                        Expanded(
+                          child: Divider(
+                            color: lightestBlack,
+                            thickness: 1,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 30),
+                    if (!isWindows)
                       Row(
                         children: [
-                          Expanded(
-                            child: Divider(
-                              color: lightestBlack,
-                              thickness: 1,
-                            ),
-                          ),
-                          const SizedBox(width: 20),
-                          Text(
-                            "Sign up with",
-                            style: TextStyle(
-                              color: lightBlack,
-                              fontWeight: FontWeight.w400,
-                              fontSize: 14,
-                            ),
-                          ),
-                          const SizedBox(width: 20),
-                          Expanded(
-                            child: Divider(
-                              color: lightestBlack,
-                              thickness: 1,
-                            ),
+                          // Social(
+                          //     title: "FACEBOOK", icon: IonIcons.logo_facebook),
+                          // SizedBox(width: 20),
+                          Social(
+                            title: "GOOGLE",
+                            icon: IonIcons.logo_google,
+                            onPressed: siginInWithGoogle,
                           ),
                         ],
                       ),
-                      const SizedBox(height: 30),
-                      if (!isWindows)
-                        Row(
-                          children: [
-                            // Social(
-                            //     title: "FACEBOOK", icon: IonIcons.logo_facebook),
-                            // SizedBox(width: 20),
-                            Social(
-                              title: "GOOGLE",
-                              icon: IonIcons.logo_google,
-                              onPressed: siginInWithGoogle,
-                            ),
-                          ],
-                        ),
-                      const SizedBox(height: 60),
-                    ]),
-              ),
+                    const SizedBox(height: 60),
+                  ]),
             ),
           ),
-          if (loading) const LoadingOverlay()
-        ],
+        ),
       ),
     );
   }

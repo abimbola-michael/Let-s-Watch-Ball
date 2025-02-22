@@ -45,7 +45,7 @@ class WatcherItem extends StatelessWidget {
     if (type == "current") {
       options.add("Sync");
     }
-    if (watcher.callMode != null) {
+    if (watcher.isAudioOn != null) {
       options.addAll([watcher.isAudioOn == true ? "UnMute" : "Mute"]);
     }
     return options;
@@ -63,7 +63,7 @@ class WatcherItem extends StatelessWidget {
         padding: const EdgeInsets.all(2),
         decoration: BoxDecoration(
           border: Border.all(
-              color: (watcher.audioLevel ?? 0) > 0
+              color: ((watcher.audioLevel ?? 0) * 10).toInt() > 0
                   ? primaryColor
                   : Colors.transparent,
               width: 2),

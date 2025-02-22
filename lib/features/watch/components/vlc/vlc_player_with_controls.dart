@@ -39,7 +39,7 @@ class VlcPlayerWithControls extends StatefulWidget {
 }
 
 class VlcPlayerWithControlsState extends State<VlcPlayerWithControls> {
-  static const _playerControlsBgColor = Colors.black87;
+  static const _playerControlsBgColor = Colors.black38;
   static const _numberPositionOffset = 8.0;
   static const _recordingPositionOffset = 10.0;
   static const _positionedBottomSpace = 7.0;

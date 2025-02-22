@@ -50,7 +50,6 @@ class _StreamMatchScreenState extends ConsumerState<StreamMatchScreen> {
       final matchId = context.args["matchId"] as String?;
       watch = context.args["watch"] as Watch?;
       this.matchId = matchId ?? watch?.matchId ?? "";
-      //getStreamLink();
       isFirstTime = false;
     }
   }

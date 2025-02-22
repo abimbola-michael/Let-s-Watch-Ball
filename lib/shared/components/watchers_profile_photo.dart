@@ -41,8 +41,8 @@ class WatchersProfilePhoto extends StatelessWidget {
         itemCount: users.length,
         itemBuilder: (context, index) {
           final user = users[index];
-          final profilePhoto = user.photo ?? "";
-          final name = user.name.split(" ").take(2).join();
+          final profilePhoto = user.photo;
+          final name = user.phoneName ?? user.name;
           return Container(
             width: double.infinity,
             height: double.infinity,

@@ -291,6 +291,7 @@ class FirestoreMethods {
         yield* snapshots.map((snapshot) => snapshot.getValuesChange(callback));
       }
     } on FirebaseException catch (e) {
+      print("except = $e");
       yield [];
     }
   }

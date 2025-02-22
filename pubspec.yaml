@@ -44,7 +44,7 @@ dependencies:
   google_fonts:
   icons_plus:
   timeago:
-  flutter_webrtc:
+  flutter_webrtc: ^0.11.6
   firebase_core:
   firebase_auth:
   firebase_messaging:
@@ -91,6 +91,7 @@ dependencies:
   in_app_purchase:
   google_mobile_ads:
   flutter_dotenv:
+  custom_refresh_indicator:
 
 # dependency_overrides:
 #   meta: 1.11.0

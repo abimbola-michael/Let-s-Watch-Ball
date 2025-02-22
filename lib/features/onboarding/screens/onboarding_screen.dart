@@ -108,62 +108,62 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     //     message: snapshot.error.toString(),
     //   );
     // }
-    if (loading) {
-      return const LoadingOverlay();
-    }
 
     return Scaffold(
-      body: Column(
-        children: [
-          Expanded(
-            child: PageView(
-              controller: _controller,
-              onPageChanged: (page) {
-                startTimer();
-              },
-              children: List.generate(onboardingInfos.length, (index) {
-                final onboardingInfo = onboardingInfos[index];
-                return OnboardingInfoItem(onboardingInfo: onboardingInfo);
-              }),
+      body: LoadingOverlay(
+        loading: loading,
+        child: Column(
+          children: [
+            Expanded(
+              child: PageView(
+                controller: _controller,
+                onPageChanged: (page) {
+                  startTimer();
+                },
+                children: List.generate(onboardingInfos.length, (index) {
+                  final onboardingInfo = onboardingInfos[index];
+                  return OnboardingInfoItem(onboardingInfo: onboardingInfo);
+                }),
+              ),
             ),
-          ),
-          PageIndicator(page: currentPage, pageCount: 3),
-          const SizedBox(
-            height: 10,
-          ),
-          Padding(
-            padding:
-                const EdgeInsets.only(left: 10, right: 20, bottom: 20, top: 20),
-            child: Row(
-              mainAxisAlignment: currentPage != onboardingInfos.length - 1
-                  ? MainAxisAlignment.spaceBetween
-                  : MainAxisAlignment.center,
-              children: [
-                if (currentPage != onboardingInfos.length - 1)
-                  AppTextButton(
-                    text: "Skip",
-                    style: context.bodyLarge?.copyWith(
-                        fontWeight: FontWeight.w500, color: lightTint),
-                    onPressed: gotoWelcomeScreen,
-                  ),
-                Button(
-                  color: primaryColor,
-                  borderRadius: BorderRadius.circular(10),
-                  padding:
-                      const EdgeInsets.symmetric(vertical: 10, horizontal: 60),
-                  onPressed: () => goNext(true),
-                  child: Text(
-                    currentPage == onboardingInfos.length - 1
-                        ? "Lets Get Started"
-                        : "Next",
-                    style: context.bodyLarge
-                        ?.copyWith(fontWeight: FontWeight.w600, color: white),
-                  ),
-                )
-              ],
+            PageIndicator(page: currentPage, pageCount: 3),
+            const SizedBox(
+              height: 10,
             ),
-          )
-        ],
+            Padding(
+              padding: const EdgeInsets.only(
+                  left: 10, right: 20, bottom: 20, top: 20),
+              child: Row(
+                mainAxisAlignment: currentPage != onboardingInfos.length - 1
+                    ? MainAxisAlignment.spaceBetween
+                    : MainAxisAlignment.center,
+                children: [
+                  if (currentPage != onboardingInfos.length - 1)
+                    AppTextButton(
+                      text: "Skip",
+                      style: context.bodyLarge?.copyWith(
+                          fontWeight: FontWeight.w500, color: lightTint),
+                      onPressed: gotoWelcomeScreen,
+                    ),
+                  Button(
+                    color: primaryColor,
+                    borderRadius: BorderRadius.circular(10),
+                    padding: const EdgeInsets.symmetric(
+                        vertical: 10, horizontal: 60),
+                    onPressed: () => goNext(true),
+                    child: Text(
+                      currentPage == onboardingInfos.length - 1
+                          ? "Lets Get Started"
+                          : "Next",
+                      style: context.bodyLarge
+                          ?.copyWith(fontWeight: FontWeight.w600, color: white),
+                    ),
+                  )
+                ],
+              ),
+            )
+          ],
+        ),
       ),
     );
     ;

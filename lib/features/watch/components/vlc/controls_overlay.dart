@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_vlc_player/flutter_vlc_player.dart';
 
 class ControlsOverlay extends StatelessWidget {
-  static const double _playButtonIconSize = 80;
+  static const double _playButtonIconSize = 35;
   static const double _replayButtonIconSize = 100;
-  static const double _seekButtonIconSize = 48;
+  static const double _seekButtonIconSize = 30;
 
   static const Duration _seekStepForward = Duration(seconds: 10);
   static const Duration _seekStepBackward = Duration(seconds: -10);

@@ -8,6 +8,7 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:watchball/main.dart';
+import 'package:watchball/utils/utils.dart';
 
 import '../features/user/services/user_service.dart';
 import '../utils/constants.dart';

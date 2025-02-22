@@ -12,6 +12,7 @@ import 'package:timeago/timeago.dart' as timeago;
 import '../../../shared/components/watchers_profile_photo.dart';
 import '../../../utils/utils.dart';
 import '../models/watch.dart';
+import '../services/watch_service.dart';
 import 'watch_arrow_notifcation.dart';
 
 class WatchItem extends StatelessWidget {
@@ -39,11 +40,15 @@ class WatchItem extends StatelessWidget {
           children: [
             Stack(
               children: [
-                WatchersProfilePhoto(
-                  users: watch.users,
-                  withoutMyId: true,
-                ),
-                if (selected != null)
+                FutureBuilder(
+                    future: updateWatchUsers(watch),
+                    builder: (context, snapshot) {
+                      return WatchersProfilePhoto(
+                        users: watch.users,
+                        withoutMyId: true,
+                      );
+                    }),
+                if (isHistory)
                   Positioned(
                     bottom: 0,
                     right: 0,
@@ -51,14 +56,17 @@ class WatchItem extends StatelessWidget {
                       isCircular: true,
                       height: 24,
                       width: 24,
-                      color: selected! ? primaryColor : transparent,
-                      borderColor: selected! ? primaryColor : lighterTint,
-                      child: selected!
-                          ? const Icon(
-                              EvaIcons.checkmark,
-                              size: 16,
-                            )
-                          : null,
+                      color: tint,
+                      borderColor: bgTint,
+                      // color: selected! ? primaryColor : transparent,
+                      // borderColor: selected! ? primaryColor : lighterTint,
+                      child: WatchArrowNotification(watch: watch),
+                      // child: selected!
+                      //     ? const Icon(
+                      //         EvaIcons.checkmark,
+                      //         size: 16,
+                      //       )
+                      //     : null,
                     ),
                   )
               ],
@@ -66,94 +74,104 @@ class WatchItem extends StatelessWidget {
             const SizedBox(
               width: 6,
             ),
-            Column(
-              children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        "${watch.users.join(", ")}${watch.records.length > 1 ? "(${watch.records.length})" : ""}",
-                        style: context.bodyMedium?.copyWith(
-                          color: watch.status == "missed" ? Colors.red : tint,
+            Expanded(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          "${watch.users.map((e) => e.phoneName ?? e.name).join(", ")}${watch.records.length > 1 ? "(${watch.records.length})" : ""}",
+                          style: context.bodyMedium?.copyWith(
+                            color: watch.status == "missed" ? Colors.red : tint,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                          maxLines: 2,
                         ),
-                        overflow: TextOverflow.ellipsis,
-                        maxLines: 2,
                       ),
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      watch.createdAt.datetime.timeRange(),
-                      style: context.bodyMedium?.copyWith(color: lightTint),
-                    ),
-                  ],
-                ),
-                Row(
-                  children: [
-                    Expanded(
-                      child: Row(
-                        children: [
-                          if (isHistory) ...[
-                            WatchArrowNotification(watch: watch),
-                            const SizedBox(width: 4),
+                      const SizedBox(width: 4),
+                      Text(
+                        watch.createdAt.datetime.timeRange(),
+                        style: context.bodyMedium
+                            ?.copyWith(color: lightTint, fontSize: 12),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Row(
+                          children: [
+                            // if (isHistory) ...[
+                            //   WatchArrowNotification(watch: watch),
+                            //   const SizedBox(width: 4),
+                            // ],
+                            Flexible(
+                              flex: 1,
+                              child: Text(
+                                match.homeName,
+                                style: context.bodySmall
+                                    ?.copyWith(fontWeight: FontWeight.w700),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            const SizedBox(
+                              width: 4,
+                            ),
+                            CachedNetworkImage(
+                              imageUrl: match.homeLogo,
+                              height: 16,
+                              width: 16,
+                            ),
+                            const SizedBox(
+                              width: 4,
+                            ),
+                            Text(
+                              "-",
+                              style: context.bodySmall
+                                  ?.copyWith(fontWeight: FontWeight.w700),
+                            ),
+                            const SizedBox(
+                              width: 4,
+                            ),
+                            CachedNetworkImage(
+                              imageUrl: match.awayLogo,
+                              height: 16,
+                              width: 16,
+                            ),
+                            const SizedBox(
+                              width: 4,
+                            ),
+                            Flexible(
+                              flex: 1,
+                              child: Text(
+                                match.awayName,
+                                style: context.bodySmall
+                                    ?.copyWith(fontWeight: FontWeight.w700),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
                           ],
-                          Flexible(
-                            flex: 1,
-                            child: Text(
-                              match.homeName,
-                              style: context.bodySmall
-                                  ?.copyWith(fontWeight: FontWeight.w700),
-                            ),
-                          ),
-                          const SizedBox(
-                            width: 4,
-                          ),
-                          CachedNetworkImage(
-                            imageUrl: match.homeLogo,
-                            height: 16,
-                            width: 16,
-                          ),
-                          const SizedBox(
-                            width: 4,
-                          ),
-                          Text(
-                            "-",
-                            style: context.bodySmall
-                                ?.copyWith(fontWeight: FontWeight.w700),
-                          ),
-                          const SizedBox(
-                            width: 4,
-                          ),
-                          CachedNetworkImage(
-                            imageUrl: match.awayLogo,
-                            height: 16,
-                            width: 16,
-                          ),
-                          const SizedBox(
-                            width: 4,
-                          ),
-                          Flexible(
-                            flex: 1,
-                            child: Text(
-                              match.awayName,
-                              style: context.bodySmall
-                                  ?.copyWith(fontWeight: FontWeight.w700),
-                            ),
-                          ),
-                        ],
+                        ),
                       ),
-                    ),
-                    // if (watch.records.length > 1) ...[
-                    //   const SizedBox(
-                    //     width: 4,
-                    //   ),
-                    //   Text(
-                    //     "(${watch.records.length})",
-                    //     style: context.bodySmall?.copyWith(color: primaryColor),
-                    //   ),
-                    // ]
-                  ],
-                ),
-              ],
+                      // if (watch.records.length > 1) ...[
+                      //   const SizedBox(
+                      //     width: 4,
+                      //   ),
+                      //   Text(
+                      //     "(${watch.records.length})",
+                      //     style: context.bodySmall?.copyWith(color: primaryColor),
+                      //   ),
+                      // ]
+                    ],
+                  ),
+                ],
+              ),
             ),
           ],
         ),

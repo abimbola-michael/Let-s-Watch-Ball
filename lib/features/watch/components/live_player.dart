@@ -240,7 +240,7 @@ class _LivePlayerState extends ConsumerState<LivePlayer> {
                   ),
                 if (loading)
                   const CircularProgressIndicator()
-                else if (streamUrl != null)
+                else if (streamUrl == null)
                   IconButton(
                     onPressed: startStreaming,
                     icon: const Icon(
