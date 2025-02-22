@@ -45,7 +45,7 @@ class _SignupScreenState extends State<SignupScreen> {
   bool acceptTerms = false;
   bool canGoogleSignIn = kIsWeb || !Platform.isWindows;
 
-   loading = false;
+  bool loading = false;
   String countryDialCode = "";
   @override
   void initState() {
